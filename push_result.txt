@@ -1,0 +1,1 @@
+hell -Command cd\ \'d:\\FBA\\fba\\Github\'\;\ git\ remote\ set-url\ origin\ https://github.com/Arens-88/my-website.git\;\ git\ add\ .\;\ git\ commit\ -m\ \'更新网站内容\'\ 2\>\&1\;\ git\ push\ -u\ origin\ master\ -f\ 2\>\&1
