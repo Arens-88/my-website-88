@@ -1,0 +1,41 @@
+# 忽略编译生成的文件
+build/
+dist/
+output/
+
+# 忽略日志文件
+*.log
+
+# 忽略临时文件
+*.tmp
+*.temp
+
+# 忽略证书相关文件
+*.pem
+*.key
+*.cert
+cert_config.txt
+
+# 忽略Windows系统文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 忽略IDE相关文件
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 忽略Python相关文件
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+
+# 忽略PowerShell脚本生成的文件
+*.ps1~

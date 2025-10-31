@@ -1,0 +1,44 @@
+# PowerShell配置命令
+
+请按照以下步骤使用PowerShell快速配置hosts文件：
+
+## 步骤1：打开管理员PowerShell
+
+1. 点击「开始」菜单
+2. 搜索「PowerShell」
+3. 右键点击「Windows PowerShell」
+4. 选择「以管理员身份运行」
+5. 如果出现用户账户控制提示，点击「是」
+
+## 步骤2：执行配置命令
+
+复制下面的完整命令，粘贴到PowerShell窗口中，然后按回车键：
+
+```powershell
+Add-Content -Path "C:\Windows\System32\drivers\etc\hosts" -Value "`n127.0.0.1 tomarens.xyz" -ErrorAction Stop; Write-Host "Hosts文件配置成功！tomarens.xyz 已指向 127.0.0.1" -ForegroundColor Green; ipconfig /flushdns
+```
+
+## 步骤3：验证配置
+
+执行以下命令验证配置是否成功：
+
+```powershell
+Test-Connection tomarens.xyz
+```
+
+如果看到回复来自 127.0.0.1，则配置成功。
+
+## 注意事项
+
+- 确保您使用的是管理员权限的PowerShell
+- 如果hosts文件中已存在tomarens.xyz的条目，此命令会添加重复条目，但这不会影响正常使用
+- 配置完成后，请确保Python服务器正在端口8081上运行
+
+## 常见错误处理
+
+如果出现权限错误，请确保：
+1. 您以管理员身份运行PowerShell
+2. 您的账户具有管理员权限
+3. Windows Defender或其他安全软件没有阻止修改hosts文件
+
+如果遇到其他问题，请参考「手动配置Hosts文件指南.txt」进行操作。

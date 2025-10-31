@@ -1,0 +1,3 @@
+@echo off
+echo 正在启动FBA费用计算器...
+FBA费用计算器.exe

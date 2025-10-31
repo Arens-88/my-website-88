@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BUG反馈 - FBA费用计算器</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px 0;
+            background-color: #667eea;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        /* 表单样式 */
+        .form-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"],
+        input[type="email"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+        
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+        }
+        
+        .btn:hover {
+            background-color: #5a67d8;
+        }
+        
+        .btn-primary {
+            background-color: #667eea;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .form-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .form-buttons {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+        
+        /* 提示信息样式 */
+        .form-note {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        /* 加载和成功提示 */
+        #response-message {
+            display: none;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>BUG反馈</h1>
+            <p class="subtitle">请帮助我们改进FBA费用计算器</p>
+        </header>
+        
+        <div class="form-container">
+            <form id="feedback-form" method="post" action="https://www.tomaren.xyz/submit_feedback">
+                <div class="form-group">
+                    <label for="name">您的称呼 <span style="color: #dc3545;">*</span></label>
+                    <input type="text" id="name" name="name" required placeholder="请输入您的称呼">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">联系方式 <span style="color: #dc3545;">*</span></label>
+                    <input type="email" id="email" name="email" required placeholder="请输入您的邮箱地址，方便我们联系您">
+                    <p class="form-note">我们会严格保护您的个人信息</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="version">软件版本</label>
+                    <input type="text" id="version" name="version" placeholder="请输入您使用的FBA费用计算器版本号">
+                    <p class="form-note">如果您不知道版本号，可以不填</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="type">反馈类型 <span style="color: #dc3545;">*</span></label>
+                    <select id="type" name="type" required>
+                        <option value="">请选择反馈类型</option>
+                        <option value="bug">功能Bug</option>
+                        <option value="crash">软件崩溃</option>
+                        <option value="feature">功能建议</option>
+                        <option value="ui">界面优化</option>
+                        <option value="other">其他问题</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">问题描述 <span style="color: #dc3545;">*</span></label>
+                    <textarea id="description" name="description" required placeholder="请详细描述您遇到的问题或建议"></textarea>
+                    <p class="form-note">越详细的描述越有助于我们解决问题</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="steps">复现步骤</label>
+                    <textarea id="steps" name="steps" placeholder="请描述如何复现这个问题（如有）"></textarea>
+                    <p class="form-note">如果是功能建议，可以描述您期望的功能</p>
+                </div>
+                
+                <!-- 隐藏字段，标识来源为github -->
+                <input type="hidden" name="source" value="github">
+                
+                <div class="form-buttons">
+                    <button type="submit" class="btn btn-primary">提交反馈</button>
+                    <a href="index.html" class="btn btn-secondary">返回首页</a>
+                </div>
+            </form>
+            
+            <div id="response-message"></div>
+        </div>
+    </div>
+    
+    <script>
+        // 表单提交处理
+        document.getElementById('feedback-form').addEventListener('submit', function(e) {
+            e.preventDefault(); // 阻止默认表单提交
+            
+            const form = e.target;
+            const responseMessage = document.getElementById('response-message');
+            
+            // 显示加载中
+            responseMessage.textContent = '正在提交反馈...';
+            responseMessage.className = 'loading';
+            responseMessage.style.display = 'block';
+            
+            // 创建FormData对象
+            const formData = new FormData(form);
+            
+            // 发送POST请求
+            fetch('https://www.tomaren.xyz/submit_feedback', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`服务器响应错误: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(data => {
+                // 检查响应是否包含成功信息
+                if (data.includes('反馈提交成功')) {
+                    responseMessage.textContent = '反馈提交成功！感谢您的反馈！';
+                    responseMessage.className = 'success';
+                    // 5秒后跳转到成功页面
+                    setTimeout(() => {
+                        alert('反馈提交成功！感谢您的帮助！');
+                        window.location.href = 'index.html';
+                    }, 3000);
+                } else {
+                    throw new Error('提交未成功，请稍后再试');
+                }
+            })
+            .catch(error => {
+                responseMessage.textContent = `提交失败: ${error.message}`;
+                responseMessage.className = 'error';
+            });
+        });
+    </script>
+</body>
+</html>

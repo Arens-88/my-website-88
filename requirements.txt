@@ -1,0 +1,6 @@
+# FBA配送费计算器依赖列表
+# 基础GUI库
+# tkinter 是Python标准库，不需要单独安装
+
+# 用于打包程序
+pyinstaller==6.3.0
