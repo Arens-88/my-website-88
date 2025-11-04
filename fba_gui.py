@@ -14,7 +14,7 @@ import urllib.parse
 
 class FBAShippingCalculator:
     # 程序版本信息
-    VERSION = "1.2.0"
+    VERSION = "1.2.4"
     UPDATE_URL = "https://example.com/fba_calculator/latest_version.json"  # 更新检查URL
     SETTINGS_FILE = "settings.json"  # 设置文件路径
     UPDATE_INFO_FILE = "update_info.json"  # 更新信息文件路径
@@ -516,8 +516,8 @@ class FBAShippingCalculator:
         units_frame = ttk.Frame(from_unit_frame)
         units_frame.pack(side=tk.LEFT)
         
-        units = ["磅 (lb)", "盎司 (oz)", "克 (g)", "千克 (kg)"]
-        unit_values = ["磅", "盎司", "克", "千克"]
+        units = ["磅 (lb)", "盎司 (oz)"]
+        unit_values = ["磅", "盎司"]
         
         for text, value in zip(units, unit_values):
             ttk.Radiobutton(
@@ -787,7 +787,16 @@ class FBAShippingCalculator:
         # 绑定输入事件，实时更新尺寸分段
         entry.bind("<KeyRelease>", lambda event: self.update_size_segment())
         
-        unit_label = ttk.Label(row, text=default_unit)
+        # 显示完整的单位名称（包括英文缩写）
+        unit_display_map = {
+            "磅": "磅 (lb)",
+            "盎司": "盎司 (oz)",
+            "克": "克 (g)",
+            "千克": "千克 (kg)",
+            "英寸": "英寸"
+        }
+        display_text = unit_display_map.get(default_unit, default_unit)
+        unit_label = ttk.Label(row, text=display_text)
         unit_label.pack(side=tk.LEFT)
         return unit_label
         
@@ -873,7 +882,7 @@ class FBAShippingCalculator:
                 
                 # 更新检查时间
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-                self.root.after(0, lambda: self.last_update_check_var.set(f"上次检查: {current_time}"))
+                self.root.after(0, lambda: self.last_update_check_var.set(f"上次检查更新: {current_time}"))
                 
                 # 比较版本号
                 if self.is_newer_version(latest_version, self.VERSION):
@@ -907,7 +916,7 @@ class FBAShippingCalculator:
                 import urllib.error
                 
                 # 尝试从远程服务器获取更新信息
-                remote_url = f"{self.UPLOAD_SERVER_URL}/{self.UPDATE_INFO_FILE}"
+                remote_url = f"https://www.tomarens.com/{self.UPDATE_INFO_FILE}"
                 with urllib.request.urlopen(remote_url, timeout=10) as response:
                     if response.status == 200:
                         data = response.read().decode('utf-8')
@@ -918,7 +927,7 @@ class FBAShippingCalculator:
         # 如果都失败了，返回默认数据
         return {
             "version": self.VERSION,
-            "download_url": f"{self.UPLOAD_SERVER_URL}/FBA费用计算器.exe",
+            "download_url": "https://www.tomarens.com/downloads/FBA费用计算器.exe",
             "release_notes": "暂无更新信息"
         }
     
@@ -1512,11 +1521,39 @@ echo 更新完成，程序已重新启动。
             else:  # 直接运行Python脚本
                 settings_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.SETTINGS_FILE)
             
+            # 确保设置目录存在
+            settings_dir = os.path.dirname(settings_path)
+            if not os.path.exists(settings_dir):
+                os.makedirs(settings_dir)
+            
             # 保存设置文件
             with open(settings_path, 'w', encoding='utf-8') as f:
                 json.dump(self.settings, f, ensure_ascii=False, indent=2)
+            
+            # 验证保存是否成功
+            if os.path.exists(settings_path):
+                # 检查文件大小是否合理
+                file_size = os.path.getsize(settings_path)
+                if file_size > 0:
+                    # 重新读取验证内容
+                    with open(settings_path, 'r', encoding='utf-8') as f:
+                        loaded_settings = json.load(f)
+                    # 比较关键字段确保保存正确
+                    if loaded_settings.get('version') == self.settings.get('version'):
+                        logging.info("设置保存成功")
+                        # 显示保存成功提示
+                        self.status_var.set("设置已成功保存")
+                        # 3秒后恢复状态栏
+                        self.root.after(3000, lambda: self.status_var.set("就绪"))
+                        return True
+            
+            # 如果验证失败
+            logging.warning("设置文件保存但验证失败")
+            return False
+            
         except Exception as e:
             logging.error(f"保存设置时出错: {str(e)}")
+            return False
     
     def show_settings_dialog(self):
         """显示设置对话框，包含常规程序设置和BUG反馈功能"""
@@ -1635,9 +1672,12 @@ echo 更新完成，程序已重新启动。
             if theme_var.get() != "default":
                 self._apply_theme_by_name(theme_var.get())
             
-            # 保存设置
-            self.save_settings()
-            messagebox.showinfo("保存成功", "设置已保存！")
+            # 保存设置并检查结果
+            if self.save_settings():
+                messagebox.showinfo("保存成功", "设置已成功保存！")
+                window.destroy()  # 保存成功后关闭窗口
+            else:
+                messagebox.showerror("保存失败", "设置保存失败，请检查文件权限或磁盘空间。")
         
         button_frame = ttk.Frame(parent)
         button_frame.pack(fill=tk.X, padx=10, pady=10, side=tk.BOTTOM)
@@ -1722,12 +1762,52 @@ echo 更新完成，程序已重新启动。
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         content_text.config(yscrollcommand=scrollbar.set)
         
+        # 验证码功能
+        import random
+        import string
+        
+        def generate_captcha(length=6):
+            """生成随机验证码"""
+            characters = string.ascii_letters + string.digits
+            return ''.join(random.choice(characters) for _ in range(length))
+        
+        # 显示验证码的标签
+        captcha_value = generate_captcha()
+        captcha_var = tk.StringVar(value=captcha_value)
+        captcha_label = ttk.Label(button_frame, text="验证码:", font=('Arial', 12, 'bold'))
+        captcha_label.pack(side=tk.LEFT, padx=(0, 5))
+        
+        captcha_display = ttk.Label(button_frame, textvariable=captcha_var, font=('Arial', 12, 'bold'), width=8)
+        captcha_display.pack(side=tk.LEFT, padx=(0, 5))
+        
+        # 刷新验证码按钮
+        def refresh_captcha():
+            nonlocal captcha_value
+            new_captcha = generate_captcha()
+            captcha_value = new_captcha
+            captcha_var.set(new_captcha)
+        
+        refresh_button = ttk.Button(button_frame, text="刷新", command=refresh_captcha)
+        refresh_button.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # 验证码输入框
+        captcha_entry = ttk.Entry(button_frame, width=10, font=('Arial', 12))
+        captcha_entry.pack(side=tk.LEFT, padx=(0, 10))
+        
         # 提交按钮
         def submit_feedback():
             # 获取反馈内容
             content = content_text.get("1.0", tk.END).strip()
             if not content:
                 messagebox.showerror("错误", "请输入反馈内容")
+                return
+            
+            # 验证码验证
+            user_captcha = captcha_entry.get().strip()
+            if user_captcha.upper() != captcha_value.upper():
+                messagebox.showerror("验证码错误", "请输入正确的验证码")
+                refresh_captcha()  # 刷新验证码
+                captcha_entry.delete(0, tk.END)  # 清空输入
                 return
             
             # 创建反馈数据
@@ -1740,7 +1820,7 @@ echo 更新完成，程序已重新启动。
                 "system": platform.platform()
             }
             
-            # 保存反馈到文件
+            # 保存反馈到文件并尝试发送到服务器
             try:
                 # 确定反馈文件位置
                 if getattr(sys, 'frozen', False):  # 编译后的可执行文件
@@ -1763,7 +1843,33 @@ echo 更新完成，程序已重新启动。
                 with open(feedback_file, 'w', encoding='utf-8') as f:
                     json.dump(feedbacks, f, ensure_ascii=False, indent=2)
                 
-                messagebox.showinfo("提交成功", "感谢您的反馈！我们会尽快处理。")
+                # 尝试发送到服务器
+                server_success = False
+                try:
+                    if self.check_internet_connection():
+                        import urllib.request
+                        import urllib.error
+                        
+                        # 使用新的反馈接收端点
+                        feedback_url = "https://www.tomarens.com/submit_feedback"
+                        data = json.dumps(feedback_data).encode('utf-8')
+                        headers = {'Content-Type': 'application/json'}
+                        req = urllib.request.Request(feedback_url, data=data, headers=headers)
+                        
+                        with urllib.request.urlopen(req, timeout=15) as response:
+                            if response.status == 200:
+                                logging.info("反馈成功发送到服务器")
+                                server_success = True
+                            else:
+                                logging.error(f"发送反馈到服务器失败，HTTP状态码: {response.status}")
+                except Exception as e:
+                    logging.error(f"发送反馈到服务器异常: {str(e)}")
+                
+                # 无论是否发送到服务器，都显示成功信息
+                if server_success:
+                    messagebox.showinfo("提交成功", f"感谢您的反馈！我们会尽快处理。\n\n反馈已保存到本地文件: {feedback_file}")
+                else:
+                    messagebox.showinfo("提交成功（本地）", f"反馈已成功保存到本地文件，将在网络恢复后尝试发送到服务器。\n\n本地文件路径: {feedback_file}")
                 window.destroy()
                 
             except Exception as e:
@@ -1867,25 +1973,7 @@ echo 更新完成，程序已重新启动。
         )
         oz_radio.pack(side=tk.LEFT, padx=(0, 20))
         
-        # 克单选按钮
-        g_radio = ttk.Radiobutton(
-            unit_frame, 
-            text="克 (g)", 
-            variable=self.weight_unit_var, 
-            value="克",
-            command=lambda: [self.on_weight_unit_change(), self.update_size_segment()]
-        )
-        g_radio.pack(side=tk.LEFT, padx=(0, 20))
-        
-        # 千克单选按钮
-        kg_radio = ttk.Radiobutton(
-            unit_frame, 
-            text="千克 (kg)", 
-            variable=self.weight_unit_var, 
-            value="千克",
-            command=lambda: [self.on_weight_unit_change(), self.update_size_segment()]
-        )
-        kg_radio.pack(side=tk.LEFT)
+        # 移除克和千克选项，只保留磅和盎司
         
         # 重量值输入
         self.weight_var = tk.StringVar()
@@ -2043,45 +2131,41 @@ echo 更新完成，程序已重新启动。
         new_unit = self.weight_unit_var.get()
         weight_value = self.weight_var.get()
         
-        # 更新单位标签
-        self.weight_unit_label.config(text=new_unit)
+        # 更新单位标签，显示完整的单位名称（包括英文缩写）
+        unit_display_map = {
+            "磅": "磅 (lb)",
+            "盎司": "盎司 (oz)"
+        }
+        display_text = unit_display_map.get(new_unit, new_unit)
+        self.weight_unit_label.config(text=display_text)
         
         # 如果有重量值且单位发生了变化，则进行转换
         if weight_value and self.last_weight_unit != new_unit:
             try:
                 weight = float(weight_value)
                 
-                # 首先将所有单位转换为克进行中间计算
+                # 单位转换逻辑 - 首先转换为克（中间单位）
+                weight_in_grams = 0
+                
+                # 从当前单位转换为克
                 if self.last_weight_unit == "磅":
                     weight_in_grams = weight * 453.59237
                 elif self.last_weight_unit == "盎司":
                     weight_in_grams = weight * 28.349523125
-                elif self.last_weight_unit == "克":
-                    weight_in_grams = weight
-                elif self.last_weight_unit == "千克":
-                    weight_in_grams = weight * 1000
-                else:
-                    weight_in_grams = weight  # 默认不转换
                 
-                # 然后将克转换为目标单位
+                # 从克转换为新单位
+                converted_weight = 0
+                format_str = "{0:.2f}"  # 默认格式
+                
                 if new_unit == "磅":
                     converted_weight = weight_in_grams / 453.59237
+                    format_str = "{0:.2f}"
                 elif new_unit == "盎司":
                     converted_weight = weight_in_grams / 28.349523125
-                elif new_unit == "克":
-                    converted_weight = weight_in_grams
-                elif new_unit == "千克":
-                    converted_weight = weight_in_grams / 1000
-                else:
-                    converted_weight = weight_in_grams  # 默认不转换
+                    format_str = "{0:.1f}"
                 
-                # 根据单位决定保留的小数位数
-                if new_unit in ["磅", "千克"]:
-                    self.weight_var.set(f"{converted_weight:.2f}")
-                elif new_unit == "盎司":
-                    self.weight_var.set(f"{converted_weight:.1f}")
-                else:  # 克
-                    self.weight_var.set(f"{converted_weight:.0f}")
+                # 更新显示值
+                self.weight_var.set(format_str.format(converted_weight))
             except ValueError:
                 # 如果输入不是有效的数字，不做处理
                 pass
@@ -2679,6 +2763,7 @@ echo 更新完成，程序已重新启动。
             # 准备导出数据的函数
             def prepare_export_data():
                 export_type = export_type_var.get()
+                format_type = format_var.get()
                 export_window.destroy()
                 
                 # 准备导出数据
@@ -2689,7 +2774,7 @@ echo 更新完成，程序已重新启动。
                     result_text = self.result_text.get(1.0, tk.END).strip()
                     if not result_text:
                         messagebox.showinfo("提示", "没有当前计算结果可导出")
-                        return None, export_type
+                        return None, export_type, format_type
                     
                     data = {}
                     lines = result_text.split('\n')
@@ -2713,10 +2798,10 @@ echo 更新完成，程序已重新启动。
                     # 使用历史记录数据
                     if not self.calculation_history:
                         messagebox.showinfo("提示", "计算历史记录为空")
-                        return None, export_type
+                        return None, export_type, format_type
                     data_list = self.calculation_history.copy()
                 
-                return data_list, export_type
+                return data_list, export_type, format_type
             
             # 创建按钮框架
             button_frame = ttk.Frame(export_window)
@@ -2729,11 +2814,12 @@ echo 更新完成，程序已重新启动。
             
             # 执行导出的函数
             def execute_export(result):
-                data_list, export_type = result
+                if result is None:
+                    return
+                    
+                data_list, export_type, format_type = result
                 if data_list is None:
                     return
-                
-                format_type = format_var.get()
                 
                 # 打开文件保存对话框
                 file_types = [
@@ -2766,9 +2852,6 @@ echo 更新完成，程序已重新启动。
                 except Exception as e:
                     messagebox.showerror("错误", f"导出失败：\n{str(e)}")
         
-        except Exception as e:
-            messagebox.showerror("错误", f"导出数据时出错：\n{str(e)}")
-            
         except Exception as e:
             messagebox.showerror("错误", f"导出数据时出错：\n{str(e)}")
     
@@ -3433,7 +3516,7 @@ echo 更新完成，程序已重新启动。
         units_frame.pack(side=tk.LEFT)
         
         units = ["磅 (lb)", "盎司 (oz)", "克 (g)", "千克 (kg)"]
-        unit_values = ["磅", "盎司", "克", "千克"]
+        unit_values = ["磅", "盎司"]
         
         for text, value in zip(units, unit_values):
             ttk.Radiobutton(

@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='fba_gui',
+    name='FBA费用计算器',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -32,7 +32,12 @@ exe = EXE(
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
-    target_arch=None,
+    target_arch='win64',  # 指定64位架构
     codesign_identity=None,
     entitlements_file=None,
+    # 添加Windows版本兼容性设置
+    version='1.2.4.0',
+    company_name='Jerry Tom',
+    product_name='FBA费用计算器',
+    copyright='© 2025 Jerry Tom',
 )

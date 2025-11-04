@@ -1,0 +1,26 @@
+[
+  {
+    "type": "bug",
+    "contact": "111",
+    "content": "无法找到适用于我的电脑的版本",
+    "version": "1.2.0",
+    "timestamp": "2025-10-31 17:31:44",
+    "system": "Windows-10-10.0.26100-SP0"
+  },
+  {
+    "type": "bug",
+    "contact": "111",
+    "content": "1111",
+    "version": "1.2.0",
+    "timestamp": "2025-11-01 12:40:36",
+    "system": "Windows-10-10.0.26100-SP0"
+  },
+  {
+    "type": "bug",
+    "contact": "111",
+    "content": "111",
+    "version": "1.2.0",
+    "timestamp": "2025-11-02 22:16:48",
+    "system": "Windows-10-10.0.26100-SP0"
+  }
+]

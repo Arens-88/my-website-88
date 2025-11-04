@@ -1,5 +1,6 @@
 {
-  "update_download_dir": "d:\\FBA\\fba\\FBA",
+  "update_download_dir": "d:\\FBA\\fba\\FBA\\downloads",
   "theme": "default",
-  "window_size": "maximized"
+  "window_size": "maximized",
+  "check_update_on_start": true
 }

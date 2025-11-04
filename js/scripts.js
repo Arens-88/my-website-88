@@ -69,11 +69,11 @@ function setupButtonListeners() {
 // 检查版本信息
 function checkVersionInfo() {
     // 这里可以通过AJAX请求获取最新版本信息
-    // 目前使用模拟数据
+    // 使用正确的版本数据
     const versionInfo = {
-        latestVersion: '1.1.1',
-        releaseDate: '2023-10-15',
-        description: '修复了部分计算错误，优化了用户界面，增加了更多导出格式选项'
+        latestVersion: '1.2.2',
+        releaseDate: '2025-11-01',
+        description: '修复了批量处理中的错误，移除了对不存在变量的引用，修正了异常处理结构，优化了代码稳定性，提高了程序运行效率'
     };
     
     // 更新页面上的版本信息
