@@ -225,7 +225,7 @@ class CustomHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 
                 update_info = {
                     "version": latest_version,
-                    "download_url": f"http://{local_ip}:{current_port}/downloads/FBA费用计算器.exe",
+                    "download_url": f"http://{local_ip}:{current_port}/downloads/FBA费用计算器安装程序.exe",
                     "release_notes": "本地服务器提供的最新版本更新",
                     "file_size_mb": f"{exe_size:.2f} MB",
                     "update_time": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -1003,7 +1003,7 @@ def ensure_required_files():
             
             default_update_info = {
                 "version": "1.1.0",
-                "download_url": f"http://{local_ip}:{PORT}/downloads/FBA费用计算器.exe",
+                "download_url": f"http://{local_ip}:{PORT}/downloads/FBA费用计算器安装程序.exe",
                 "release_notes": "这是默认的更新信息，用于本地更新测试",
                 "file_size_mb": "0.00 MB",
                 "update_time": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -1031,7 +1031,7 @@ def ensure_required_files():
         # 确保在downloads目录中有一份副本
         import shutil
         try:
-            target_path = os.path.join('downloads', 'FBA费用计算器.exe')
+            target_path = os.path.join('downloads', 'FBA费用计算器安装程序.exe')
             if not os.path.exists(target_path) or os.path.getmtime(exe_source) > os.path.getmtime(target_path):
                 shutil.copy2(exe_source, target_path)
                 print(f"复制可执行文件到downloads目录成功")

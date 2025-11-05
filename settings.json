@@ -1,5 +1,5 @@
 {
-  "update_download_dir": "d:\\FBA\\fba\\FBA\\downloads",
+  "update_download_dir": "%USERPROFILE%\\Desktop\\FBA下载",
   "theme": "default",
   "window_size": "maximized",
   "check_update_on_start": true

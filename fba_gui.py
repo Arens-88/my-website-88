@@ -1277,9 +1277,9 @@ class FBAShippingCalculator:
             self.status_var.set("就绪")
     
     def download_update(self, download_url):
-        """下载并安装更新"""
+        """下载更新安装程序（用户手动安装）"""
         try:
-            self.status_var.set("正在下载更新...")
+            self.status_var.set("正在下载安装程序...")
             
             # 检查是否有互联网连接或本地服务器连接
             is_connected = self.check_internet_connection(download_url)
@@ -1288,26 +1288,30 @@ class FBAShippingCalculator:
                 # 如果没有网络连接，提示用户并提供替代方法
                 messagebox.showinfo(
                     "连接问题", 
-                    "无法连接到服务器。将打开浏览器到下载页面，请手动下载并安装更新。"
+                    "无法连接到服务器。将打开浏览器到下载页面，请手动下载安装程序。"
                 )
                 webbrowser.open(download_url)
                 return
             
             # 确定下载目录
             download_dir = self.settings.get("update_download_dir", None)
+            # 解析环境变量
+            if download_dir:
+                import os
+                download_dir = os.path.expandvars(download_dir)
             if not download_dir or not os.path.exists(download_dir):
                 # 如果没有保存的下载目录或目录不存在，询问用户
                 default_dir = os.path.dirname(os.path.abspath(sys.executable)) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
                 user_choice = messagebox.askyesno(
                     "选择下载位置", 
-                    f"是否将更新文件下载到当前程序目录？\n{default_dir}\n\n选择'否'将允许您自定义下载位置。"
+                    f"是否将安装程序下载到当前程序目录？\n{default_dir}\n\n选择'否'将允许您自定义下载位置。"
                 )
                 
                 if user_choice:
                     download_dir = default_dir
                 else:
                     download_dir = filedialog.askdirectory(
-                        title="选择更新文件下载位置",
+                        title="选择安装程序下载位置",
                         initialdir=default_dir
                     )
                     if not download_dir:  # 用户取消了选择
@@ -1322,29 +1326,32 @@ class FBAShippingCalculator:
             def download_file():
                 try:
                     import urllib.request
+                    import os
                     
-                    # 获取文件名（使用原程序文件名）
-                    if getattr(sys, 'frozen', False):  # 编译后的可执行文件
-                        exe_name = os.path.basename(sys.executable)
-                    else:  # 直接运行Python脚本
-                        exe_name = "FBA费用计算器.exe"
+                    # 使用安装程序名称而不是主程序名称
+                    installer_name = "FBA费用计算器安装程序.exe"
                     
-                    # 下载文件路径（临时文件）
-                    temp_file_path = os.path.join(download_dir, f"{exe_name}.temp")
+                    # 下载文件路径
+                    installer_path = os.path.join(download_dir, installer_name)
                     
                     # 下载文件并显示进度
                     def report_progress(block_num, block_size, total_size):
                         progress = min(int(100 * block_num * block_size / total_size), 100)
-                        self.root.after(0, lambda: self.status_var.set(f"正在下载更新... {progress}%"))
+                        self.root.after(0, lambda: self.status_var.set(f"正在下载安装程序... {progress}%"))
                     
                     # 尝试直接下载文件
                     try:
-                        urllib.request.urlretrieve(download_url, temp_file_path, reporthook=report_progress)
+                        urllib.request.urlretrieve(download_url, installer_path, reporthook=report_progress)
                         
-                        # 下载完成后准备替换原程序
+                        # 下载完成后提示用户手动安装
                         self.root.after(0, lambda: [
-                            self.status_var.set("下载完成，准备安装..."),
-                            self.prepare_update(temp_file_path, download_dir, exe_name)
+                            self.status_var.set("安装程序下载完成"),
+                            messagebox.showinfo(
+                                "下载完成",
+                                f"安装程序已成功下载到以下位置：\n{installer_path}\n\n请双击安装程序文件进行手动安装。"
+                            ),
+                            # 自动打开下载目录，方便用户找到安装程序
+                            os.startfile(download_dir)
                         ])
                         
                     except Exception as download_error:
@@ -1352,7 +1359,7 @@ class FBAShippingCalculator:
                         self.root.after(0, lambda: [
                             messagebox.showinfo(
                                 "下载方法切换", 
-                                "直接下载失败，将打开浏览器到下载页面，请手动下载并安装更新。"
+                                "直接下载失败，将打开浏览器到下载页面，请手动下载安装程序。"
                             ),
                             webbrowser.open(download_url)
                         ])
@@ -3256,19 +3263,28 @@ echo 更新完成，程序已重新启动。
                             return
                         
                         try:
-                            if format_type == "excel":
-                                # 尝试使用pandas导出Excel
-                                try:
-                                    import pandas as pd
-                                    df = pd.DataFrame(template_data)
-                                    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
-                                        df.to_excel(writer, index=False)
-                                    messagebox.showinfo("成功", f"模板文件已保存到\n{filename}")
-                                except ImportError:
-                                    messagebox.showerror("错误", "需要安装pandas和openpyxl库来创建Excel模板")
-                            else:
-                                # 导出为CSV格式
-                                import csv
+                                if format_type == "excel":
+                                    # 尝试使用pandas导出Excel，如果失败则自动降级到CSV
+                                    try:
+                                        import pandas as pd
+                                        df = pd.DataFrame(template_data)
+                                        with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+                                            df.to_excel(writer, index=False)
+                                        messagebox.showinfo("成功", f"模板文件已保存到\n{filename}")
+                                    except ImportError:
+                                        # 自动降级到CSV格式，避免显示错误信息
+                                        csv_filename = filename.replace('.xlsx', '.csv')
+                                        import csv
+                                        with open(csv_filename, 'w', newline='', encoding='utf-8-sig') as f:
+                                            fieldnames = list(template_data[0].keys())
+                                            writer = csv.DictWriter(f, fieldnames=fieldnames)
+                                            writer.writeheader()
+                                            for data in template_data:
+                                                writer.writerow(data)
+                                        messagebox.showinfo("提示", f"已自动创建CSV模板文件\n{csv_filename}")
+                                else:
+                                    # 导出为CSV格式
+                                    import csv
                                 with open(filename, 'w', newline='', encoding='utf-8-sig') as f:
                                     fieldnames = list(template_data[0].keys())
                                     writer = csv.DictWriter(f, fieldnames=fieldnames)
