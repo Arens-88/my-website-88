@@ -1,0 +1,64 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Build outputs
+build/
+dist/
+*.pyc
+*.pyo
+__pycache__/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependency directories
+node_modules/
+venv/
+env/
+
+# Testing
+coverage/
+.pytest_cache/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Binary files
+*.exe
+*.dll
+*.so
+*.dylib
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

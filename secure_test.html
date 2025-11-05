@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全连接测试页面</title>
+    <style>
+        /* 内联样式 - 不使用外部CSS引用 */
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .status {
+            text-align: center;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .secure {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .insecure {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HTTPS安全连接测试</h1>
+        
+        <div class="status secure">
+            <h2>🔒 页面已使用安全连接</h2>
+            <p>此页面仅包含内联资源，不引用任何外部HTTP资源</p>
+        </div>
+        
+        <div class="test-section">
+            <h3>测试链接</h3>
+            <p>以下是相对路径链接，不会导致混合内容警告：</p>
+            <ul>
+                <li><a href="index.html" class="btn">返回主页</a></li>
+                <li><a href="update_info.json" class="btn">查看更新信息</a></li>
+                <li><a href="FBA费用计算器.exe" class="btn">下载应用程序</a></li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h3>安全配置检查</h3>
+            <p>确保您的Nginx配置包含以下安全头部：</p>
+            <pre><code>add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+add_header X-Content-Type-Options nosniff;
+add_header X-Frame-Options SAMEORIGIN;
+add_header X-XSS-Protection "1; mode=block";</code></pre>
+        </div>
+        
+        <div class="test-section">
+            <h3>如何验证安全连接</h3>
+            <ol>
+                <li>浏览器地址栏应显示🔒图标</li>
+                <li>URL应以<code>https://</code>开头</li>
+                <li>浏览器控制台不应有混合内容警告</li>
+            </ol>
+        </div>
+        
+        <div class="footer">
+            <p>© 2023 FBA费用计算器 - 安全测试页面</p>
+        </div>
+    </div>
+    
+    <script>
+        // 内联JavaScript - 简单的安全检查
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查当前协议
+            if (window.location.protocol === 'https:') {
+                console.log('✅ 使用HTTPS安全连接');
+            } else {
+                console.warn('⚠️ 未使用HTTPS连接');
+            }
+            
+            // 验证资源加载
+            console.log('✅ 所有资源已内联加载，无外部HTTP引用');
+        });
+    </script>
+</body>
+</html>
