@@ -50,6 +50,7 @@ logs/
 
 # Binary files
 *.exe
+!downloads/fba_installer.exe
 *.dll
 *.so
 *.dylib
