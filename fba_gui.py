@@ -14,7 +14,7 @@ import urllib.parse
 
 class FBAShippingCalculator:
     # 程序版本信息
-    VERSION = "1.2.4"
+    VERSION = "1.3.1"
     UPDATE_URL = "https://example.com/fba_calculator/latest_version.json"  # 更新检查URL
     SETTINGS_FILE = "settings.json"  # 设置文件路径
     UPDATE_INFO_FILE = "update_info.json"  # 更新信息文件路径
@@ -235,6 +235,261 @@ class FBAShippingCalculator:
             pass
             
         return False
+        
+    def show_local_feedback(self):
+        """显示本地反馈管理界面"""
+        # 创建反馈管理窗口
+        feedback_window = tk.Toplevel(self.root)
+        feedback_window.title("本地反馈管理")
+        feedback_window.geometry("700x500")
+        feedback_window.configure(bg=self.color_theme["background"])
+        
+        # 设置窗口在屏幕中心
+        feedback_window.update_idletasks()
+        width = feedback_window.winfo_width()
+        height = feedback_window.winfo_height()
+        x = (feedback_window.winfo_screenwidth() // 2) - (width // 2)
+        y = (feedback_window.winfo_screenheight() // 2) - (height // 2)
+        feedback_window.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+        
+        # 创建标签页控件
+        notebook = ttk.Notebook(feedback_window)
+        notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # 创建所有反馈标签页
+        all_frame = ttk.Frame(notebook)
+        notebook.add(all_frame, text="所有反馈")
+        
+        # 创建待发送标签页
+        pending_frame = ttk.Frame(notebook)
+        notebook.add(pending_frame, text="待发送")
+        
+        # 创建已发送标签页
+        sent_frame = ttk.Frame(notebook)
+        notebook.add(sent_frame, text="已发送")
+        
+        # 创建发送失败标签页
+        failed_frame = ttk.Frame(notebook)
+        notebook.add(failed_frame, text="发送失败")
+        
+        # 加载反馈数据
+        def load_feedbacks():
+            # 确定反馈文件位置
+            if getattr(sys, 'frozen', False):  # 编译后的可执行文件
+                feedback_dir = os.path.dirname(os.path.abspath(sys.executable))
+            else:  # 直接运行Python脚本
+                feedback_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            feedback_file = os.path.join(feedback_dir, "feedback.json")
+            feedbacks = []
+            
+            if os.path.exists(feedback_file):
+                try:
+                    with open(feedback_file, 'r', encoding='utf-8') as f:
+                        feedbacks = json.load(f)
+                except json.JSONDecodeError:
+                    logging.error("反馈文件损坏，创建新的反馈列表")
+                    feedbacks = []
+            
+            return feedbacks, feedback_file
+        
+        # 显示反馈列表
+        def display_feedbacks(frame, status_filter=None):
+            # 清空现有内容
+            for widget in frame.winfo_children():
+                widget.destroy()
+            
+            # 加载反馈数据
+            feedbacks, _ = load_feedbacks()
+            
+            # 根据状态筛选
+            if status_filter:
+                filtered_feedbacks = [f for f in feedbacks if f.get('status') == status_filter]
+            else:
+                filtered_feedbacks = feedbacks
+            
+            # 创建滚动框架
+            canvas = tk.Canvas(frame, bg=self.color_theme["background"])
+            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+            scrollable_frame = ttk.Frame(canvas)
+            
+            scrollable_frame.bind(
+                "<Configure>",
+                lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            )
+            
+            canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+            canvas.configure(yscrollcommand=scrollbar.set)
+            
+            # 放置滚动区域
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+            
+            # 如果没有反馈
+            if not filtered_feedbacks:
+                ttk.Label(
+                    scrollable_frame,
+                    text="暂无反馈记录",
+                    font=self.default_font,
+                    background=self.color_theme["background"]
+                ).pack(pady=50)
+                return
+            
+            # 显示反馈列表
+            for i, feedback in enumerate(filtered_feedbacks):
+                feedback_frame = ttk.LabelFrame(
+                    scrollable_frame,
+                    text=f"反馈 #{len(filtered_feedbacks) - i} - {feedback.get('timestamp', '未知时间')}",
+                    padding="10"
+                )
+                feedback_frame.pack(fill=tk.X, padx=10, pady=5)
+                
+                # 反馈信息
+                info_text = []
+                info_text.append(f"类型: {feedback.get('type', 'unknown')}")
+                info_text.append(f"状态: {feedback.get('status', 'unknown')}")
+                info_text.append(f"版本: {feedback.get('version', 'unknown')}")
+                if feedback.get('contact'):
+                    info_text.append(f"联系方式: {feedback.get('contact')}")
+                info_text.append(f"系统: {feedback.get('system', 'unknown')}")
+                
+                ttk.Label(
+                    feedback_frame,
+                    text="\n".join(info_text),
+                    font=self.default_font,
+                    justify=tk.LEFT
+                ).pack(fill=tk.X, padx=5, pady=5)
+                
+                # 反馈内容
+                content_frame = ttk.Frame(feedback_frame)
+                content_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+                
+                content_text = tk.Text(
+                    content_frame,
+                    wrap=tk.WORD,
+                    font=self.default_font,
+                    height=5,
+                    relief=tk.SUNKEN,
+                    bd=1
+                )
+                content_text.insert(tk.END, feedback.get('content', ''))
+                content_text.config(state=tk.DISABLED)
+                content_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+                
+                scrollbar = ttk.Scrollbar(
+                    content_frame,
+                    orient=tk.VERTICAL,
+                    command=content_text.yview
+                )
+                scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+                content_text.config(yscrollcommand=scrollbar.set)
+                
+                # 如果状态是pending或failed，显示重试按钮
+                if feedback.get('status') in ['pending', 'failed']:
+                    def retry_send(feedback_index=i):
+                        threading.Thread(target=send_feedback_again, args=(filtered_feedbacks[feedback_index],)).start()
+                    
+                    retry_button = ttk.Button(
+                        feedback_frame,
+                        text="重试发送",
+                        command=retry_send
+                    )
+                    retry_button.pack(side=tk.RIGHT, padx=5, pady=5)
+        
+        # 重新发送反馈
+        def send_feedback_again(feedback_data):
+            try:
+                if not self.check_internet_connection():
+                    messagebox.showerror("网络错误", "当前没有网络连接，请稍后再试。")
+                    return
+                
+                import urllib.request
+                import urllib.error
+                
+                # 使用统一域名，尝试多个端点
+                DOMAIN = "tomarens.xyz"
+                endpoints = [
+                    f"http://{DOMAIN}:8081/submit_feedback",  # 本地服务器配置
+                    f"https://{DOMAIN}/submit_feedback",      # HTTPS
+                    f"http://{DOMAIN}/submit_feedback",       # HTTP
+                ]
+                
+                server_success = False
+                for endpoint in endpoints:
+                    try:
+                        data = json.dumps(feedback_data).encode('utf-8')
+                        headers = {'Content-Type': 'application/json'}
+                        req = urllib.request.Request(endpoint, data=data, headers=headers)
+                        
+                        with urllib.request.urlopen(req, timeout=10) as response:
+                            if response.status == 200:
+                                logging.info(f"反馈成功发送到服务器: {endpoint}")
+                                server_success = True
+                                break  # 成功后退出循环
+                    except Exception as inner_e:
+                        logging.warning(f"向 {endpoint} 发送反馈失败: {str(inner_e)}")
+                        continue  # 尝试下一个端点
+                
+                # 更新反馈状态
+                if server_success:
+                    # 加载所有反馈
+                    feedbacks, feedback_file = load_feedbacks()
+                    # 查找并更新对应的反馈
+                    for f in feedbacks:
+                        if (f.get('timestamp') == feedback_data.get('timestamp') and 
+                            f.get('content') == feedback_data.get('content')):
+                            f['status'] = 'sent'
+                            break
+                    # 保存更新后的反馈列表
+                    with open(feedback_file, 'w', encoding='utf-8') as f:
+                        json.dump(feedbacks, f, ensure_ascii=False, indent=2)
+                    # 刷新界面
+                    feedback_window.after(0, lambda: refresh_all_tabs())
+                    messagebox.showinfo("发送成功", "反馈已成功发送到服务器。")
+                else:
+                    # 更新为失败状态
+                    feedbacks, feedback_file = load_feedbacks()
+                    for f in feedbacks:
+                        if (f.get('timestamp') == feedback_data.get('timestamp') and 
+                            f.get('content') == feedback_data.get('content')):
+                            f['status'] = 'failed'
+                            break
+                    with open(feedback_file, 'w', encoding='utf-8') as f:
+                        json.dump(feedbacks, f, ensure_ascii=False, indent=2)
+                    feedback_window.after(0, lambda: refresh_all_tabs())
+                    messagebox.showerror("发送失败", "无法发送反馈到服务器，请稍后再试。")
+            except Exception as e:
+                logging.error(f"重试发送反馈时出错: {str(e)}")
+                messagebox.showerror("错误", "操作过程中出现错误，请稍后再试。")
+        
+        # 刷新所有标签页
+        def refresh_all_tabs():
+            display_feedbacks(all_frame)
+            display_feedbacks(pending_frame, 'pending')
+            display_feedbacks(sent_frame, 'sent')
+            display_feedbacks(failed_frame, 'failed')
+        
+        # 初始加载
+        refresh_all_tabs()
+        
+        # 添加刷新按钮
+        button_frame = ttk.Frame(feedback_window)
+        button_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        refresh_button = ttk.Button(
+            button_frame,
+            text="刷新列表",
+            command=refresh_all_tabs
+        )
+        refresh_button.pack(side=tk.LEFT, padx=5)
+        
+        # 添加说明标签
+        ttk.Label(
+            button_frame,
+            text="提示: 您可以查看所有本地存储的反馈记录，并重新发送失败的反馈。",
+            font=self.default_font
+        ).pack(side=tk.LEFT, padx=10)
+
     
     def create_navigation_frame(self):
         """创建顶部导航框架，包含切换按钮"""
@@ -899,7 +1154,10 @@ class FBAShippingCalculator:
             self.root.after(0, lambda: self.status_var.set("就绪"))
     
     def get_latest_version_info(self):
-        """获取最新版本信息"""
+        """获取最新版本信息，优化为优先使用本地服务器，增加多重备用方案"""
+        # 定义域名配置 - 统一使用tomarens.xyz
+        DOMAIN = "tomarens.xyz"
+        
         # 首先尝试从本地更新信息文件获取
         update_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.UPDATE_INFO_FILE)
         if os.path.exists(update_file):
@@ -909,25 +1167,36 @@ class FBAShippingCalculator:
             except Exception as e:
                 logging.error(f"读取本地更新信息文件失败: {str(e)}")
         
-        # 然后尝试从远程服务器获取
+        # 然后尝试从远程服务器获取，使用多域名尝试
         try:
             if self.check_internet_connection():
                 import urllib.request
                 import urllib.error
                 
-                # 尝试从远程服务器获取更新信息
-                remote_url = f"https://www.tomarens.com/{self.UPDATE_INFO_FILE}"
-                with urllib.request.urlopen(remote_url, timeout=10) as response:
-                    if response.status == 200:
-                        data = response.read().decode('utf-8')
-                        return json.loads(data)
+                # 尝试多个域名和协议
+                domains = [
+                    f"http://{DOMAIN}:8081",  # 本地服务器配置
+                    f"https://{DOMAIN}",      # HTTPS
+                    f"http://{DOMAIN}",       # HTTP
+                ]
+                
+                for domain in domains:
+                    try:
+                        remote_url = f"{domain}/{self.UPDATE_INFO_FILE}"
+                        with urllib.request.urlopen(remote_url, timeout=8) as response:
+                            if response.status == 200:
+                                data = response.read().decode('utf-8')
+                                return json.loads(data)
+                    except Exception as inner_e:
+                        logging.warning(f"从 {domain} 获取更新信息失败: {str(inner_e)}")
+                        continue  # 尝试下一个域名
         except Exception as e:
-            logging.error(f"从远程服务器获取更新信息失败: {str(e)}")
+            logging.error(f"远程更新检查失败: {str(e)}")
         
-        # 如果都失败了，返回默认数据
+        # 如果都失败了，返回默认数据，使用统一域名
         return {
             "version": self.VERSION,
-            "download_url": "https://www.tomarens.com/downloads/FBA费用计算器.exe",
+            "download_url": f"http://{DOMAIN}:8081/downloads/FBA费用计算器.exe",
             "release_notes": "暂无更新信息"
         }
     
@@ -1066,7 +1335,7 @@ class FBAShippingCalculator:
             # 提示用户输入新版本信息
             new_version_window = tk.Toplevel(self.root)
             new_version_window.title("上传更新")
-            new_version_window.geometry("500x400")
+            new_version_window.geometry("550x550")  # 增大窗口尺寸
             new_version_window.resizable(False, False)
             new_version_window.configure(bg=self.color_theme["background"])
             
@@ -1100,11 +1369,20 @@ class FBAShippingCalculator:
             notes_frame.pack(fill=tk.BOTH, expand=True, pady=10)
             
             # 预设发布说明
-            default_notes = "1. 添加了数据导出功能，支持Excel和CSV格式\n2. 添加了批量处理功能，可导入文件批量计算费用\n3. 修复了上传更新功能的问题\n4. 优化了用户界面体验"
+            default_notes = "1. 调整了BUG反馈界面大小，提供更好的用户体验\n2. 添加了数据导出功能，支持Excel和CSV格式\n3. 添加了批量处理功能，可导入文件批量计算费用\n4. 修复了上传更新功能的问题\n5. 优化了用户界面体验"
             
+            # 创建带有滚动条的文本框，确保可编辑
             notes_text = tk.Text(notes_frame, height=10, font=self.default_font, wrap=tk.WORD)
-            notes_text.pack(fill=tk.BOTH, expand=True)
+            # 添加垂直滚动条
+            scrollbar = ttk.Scrollbar(notes_frame, command=notes_text.yview)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            notes_text.config(yscrollcommand=scrollbar.set)
+            # 确保文本框占据剩余空间
+            notes_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            # 插入默认文本
             notes_text.insert(tk.END, default_notes)
+            # 确保文本框是可编辑的（默认状态）
+            notes_text.config(state=tk.NORMAL)
             
             # 按钮框架
             button_frame = ttk.Frame(content_frame)
@@ -1220,6 +1498,11 @@ class FBAShippingCalculator:
                                 web_exe_path = os.path.join(web_downloads_dir, "FBA费用计算器.exe")
                                 shutil.copy2(target_exe_path, web_exe_path)
                                 
+                                # 复制反馈页面
+                                feedback_html = os.path.join(os.path.dirname(os.path.abspath(__file__)), "feedback.html")
+                                if os.path.exists(feedback_html):
+                                    shutil.copy2(feedback_html, os.path.join(web_dir, "feedback.html"))
+                                
                                 website_updated = True
                                 break
                             except Exception as e:
@@ -1253,23 +1536,25 @@ class FBAShippingCalculator:
                     messagebox.showerror("上传失败", f"上传更新时出错: {str(e)}")
                     self.status_var.set("就绪")
             
-            # 上传按钮
+            # 上传按钮 - 增大按钮尺寸
             upload_button = ttk.Button(
                 button_frame, 
-                text="准备更新", 
+                text="上传更新", 
                 style="Accent.TButton",
-                command=do_upload
+                command=do_upload,
+                width=12  # 增大按钮宽度
             )
-            upload_button.pack(side=tk.LEFT, padx=5)
+            upload_button.pack(side=tk.RIGHT, padx=15, pady=15)
             
-            # 取消按钮
+            # 取消按钮 - 增大按钮尺寸
             cancel_button = ttk.Button(
                 button_frame, 
                 text="取消", 
                 style="TButton",
-                command=new_version_window.destroy
+                command=new_version_window.destroy,
+                width=12  # 增大按钮宽度
             )
-            cancel_button.pack(side=tk.RIGHT, padx=5)
+            cancel_button.pack(side=tk.RIGHT, padx=10)
             
         except Exception as e:
             logging.error(f"准备上传更新时出错: {str(e)}")
@@ -1325,48 +1610,140 @@ class FBAShippingCalculator:
             # 在后台线程中下载文件，避免阻塞UI
             def download_file():
                 try:
-                    import urllib.request
                     import os
+                    import threading
+                    import queue
+                    import requests
+                    from concurrent.futures import ThreadPoolExecutor
                     
-                    # 使用安装程序名称而不是主程序名称
+                    # 使用安装程序名称
                     installer_name = "FBA费用计算器安装程序.exe"
-                    
-                    # 下载文件路径
                     installer_path = os.path.join(download_dir, installer_name)
                     
-                    # 下载文件并显示进度
-                    def report_progress(block_num, block_size, total_size):
-                        progress = min(int(100 * block_num * block_size / total_size), 100)
-                        self.root.after(0, lambda: self.status_var.set(f"正在下载安装程序... {progress}%"))
+                    # 下载优化器配置
+                    chunk_size = 10 * 1024 * 1024  # 10MB块大小
+                    max_workers = 4  # 并发线程数
                     
-                    # 尝试直接下载文件
+                    # 获取文件大小
                     try:
-                        urllib.request.urlretrieve(download_url, installer_path, reporthook=report_progress)
+                        response = requests.head(download_url, allow_redirects=True)
+                        response.raise_for_status()
+                        file_size = int(response.headers.get('content-length', 0))
                         
-                        # 下载完成后提示用户手动安装
-                        self.root.after(0, lambda: [
-                            self.status_var.set("安装程序下载完成"),
-                            messagebox.showinfo(
-                                "下载完成",
-                                f"安装程序已成功下载到以下位置：\n{installer_path}\n\n请双击安装程序文件进行手动安装。"
-                            ),
-                            # 自动打开下载目录，方便用户找到安装程序
-                            os.startfile(download_dir)
-                        ])
+                        if file_size == 0:
+                            # 如果无法获取文件大小，回退到传统下载方式
+                            self.root.after(0, lambda: self._fallback_download(download_url, download_dir, installer_name))
+                            return
+                    except:
+                        # 如果HEAD请求失败，回退到传统下载方式
+                        self.root.after(0, lambda: self._fallback_download(download_url, download_dir, installer_name))
+                        return
+                    
+                    # 创建临时文件目录
+                    temp_dir = os.path.join(download_dir, "temp_chunks")
+                    if not os.path.exists(temp_dir):
+                        os.makedirs(temp_dir)
+                    
+                    # 计算分块数量
+                    chunks = []
+                    for i in range(0, file_size, chunk_size):
+                        start = i
+                        end = min(i + chunk_size - 1, file_size - 1)
+                        chunks.append((start, end, i // chunk_size))
+                    
+                    total_chunks = len(chunks)
+                    completed_chunks = 0
+                    progress_lock = threading.Lock()
+                    error_occurred = False
+                    
+                    # 下载单个块
+                    def download_chunk(chunk_info):
+                        nonlocal completed_chunks, error_occurred
+                        start, end, index = chunk_info
+                        chunk_file = os.path.join(temp_dir, f"chunk_{index}")
                         
-                    except Exception as download_error:
-                        # 如果直接下载失败，回退到浏览器方式
-                        self.root.after(0, lambda: [
-                            messagebox.showinfo(
-                                "下载方法切换", 
-                                "直接下载失败，将打开浏览器到下载页面，请手动下载安装程序。"
-                            ),
-                            webbrowser.open(download_url)
-                        ])
+                        try:
+                            headers = {'Range': f'bytes={start}-{end}'}
+                            session = requests.Session()
+                            session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=10))
+                            
+                            # 添加重试机制
+                            max_retries = 3
+                            retry_count = 0
+                            
+                            while retry_count < max_retries:
+                                try:
+                                    with session.get(download_url, headers=headers, stream=True, timeout=30) as response:
+                                        response.raise_for_status()
+                                        
+                                        with open(chunk_file, 'wb') as f:
+                                            for chunk in response.iter_content(chunk_size=8192):
+                                                if chunk:
+                                                    f.write(chunk)
+                                    
+                                    # 验证文件大小
+                                    if os.path.getsize(chunk_file) == end - start + 1:
+                                        break
+                                    else:
+                                        raise Exception("块大小不匹配")
+                                except Exception as e:
+                                    retry_count += 1
+                                    if retry_count >= max_retries:
+                                        raise e
+                                    # 指数退避
+                                    import time
+                                    time.sleep(2 ** retry_count)
                         
-                except Exception as e:
-                    logging.error(f"下载文件时出错: {str(e)}")
-                    self.root.after(0, lambda: messagebox.showerror("下载失败", "下载文件过程中出现错误，请稍后再试。"))
+                        except Exception as e:
+                            logging.error(f"下载块 {index} 失败: {str(e)}")
+                            nonlocal error_occurred
+                            error_occurred = True
+                            return
+                        finally:
+                            # 更新进度
+                            with progress_lock:
+                                completed_chunks += 1
+                                progress = min(int(100 * completed_chunks / total_chunks), 100)
+                                self.root.after(0, lambda p=progress: self.status_var.set(f"正在下载安装程序... {p}%"))
+                    
+                    # 使用线程池下载所有块
+                    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                        executor.map(download_chunk, chunks)
+                    
+                    # 检查是否有错误
+                    if error_occurred:
+                        raise Exception("部分块下载失败")
+                    
+                    # 合并文件块
+                    self.root.after(0, lambda: self.status_var.set("正在合并文件块..."))
+                    
+                    with open(installer_path, 'wb') as output:
+                        for i in range(total_chunks):
+                            chunk_file = os.path.join(temp_dir, f"chunk_{i}")
+                            if os.path.exists(chunk_file):
+                                with open(chunk_file, 'rb') as f:
+                                    output.write(f.read())
+                                os.remove(chunk_file)
+                    
+                    # 清理临时目录
+                    if os.path.exists(temp_dir):
+                        os.rmdir(temp_dir)
+                    
+                    # 下载完成后提示用户手动安装
+                    self.root.after(0, lambda: [
+                        self.status_var.set("安装程序下载完成"),
+                        messagebox.showinfo(
+                            "下载完成",
+                            f"安装程序已成功下载到以下位置：\n{installer_path}\n\n请双击安装程序文件进行手动安装。"
+                        ),
+                        # 自动打开下载目录，方便用户找到安装程序
+                        os.startfile(download_dir)
+                    ])
+                    
+                except Exception as download_error:
+                    logging.error(f"优化下载失败: {str(download_error)}")
+                    # 如果优化下载失败，回退到传统方式
+                    self.root.after(0, lambda: self._fallback_download(download_url, download_dir, installer_name))
                 finally:
                     self.root.after(0, lambda: self.status_var.set("就绪"))
             
@@ -1382,6 +1759,42 @@ class FBAShippingCalculator:
             logging.error(f"下载更新失败: {str(e)}")
             messagebox.showerror("下载失败", "无法下载更新文件，请稍后再试。")
             self.status_var.set("就绪")
+    
+    def _fallback_download(self, download_url, download_dir, installer_name):
+        """回退到传统下载方式"""
+        try:
+            import urllib.request
+            import os
+            
+            installer_path = os.path.join(download_dir, installer_name)
+            
+            def report_progress(block_num, block_size, total_size):
+                if total_size > 0:
+                    progress = min(int(100 * block_num * block_size / total_size), 100)
+                    self.root.after(0, lambda: self.status_var.set(f"正在下载安装程序（传统方式）... {progress}%"))
+                else:
+                    self.root.after(0, lambda: self.status_var.set("正在下载安装程序（传统方式）..."))
+            
+            urllib.request.urlretrieve(download_url, installer_path, reporthook=report_progress)
+            
+            self.root.after(0, lambda: [
+                self.status_var.set("安装程序下载完成"),
+                messagebox.showinfo(
+                    "下载完成",
+                    f"安装程序已成功下载到以下位置：\n{installer_path}\n\n请双击安装程序文件进行手动安装。"
+                ),
+                os.startfile(download_dir)
+            ])
+            
+        except Exception as e:
+            logging.error(f"传统下载失败: {str(e)}")
+            self.root.after(0, lambda: [
+                messagebox.showinfo(
+                    "下载方法切换", 
+                    "直接下载失败，将打开浏览器到下载页面，请手动下载安装程序。"
+                ),
+                webbrowser.open(download_url)
+            ])
     
     def prepare_update(self, temp_file_path, download_dir, exe_name):
         """准备更新，创建批处理文件来替换原程序"""
@@ -1566,8 +1979,8 @@ echo 更新完成，程序已重新启动。
         """显示设置对话框，包含常规程序设置和BUG反馈功能"""
         # 创建设置窗口
         settings_window = tk.Toplevel(self.root)
-        settings_window.title("程序设置")
-        settings_window.geometry("600x500")
+        settings_window.title("设置")
+        settings_window.geometry("700x600")
         settings_window.resizable(False, False)
         settings_window.configure(bg=self.color_theme["background"])
         
@@ -1707,6 +2120,18 @@ echo 更新完成，程序已重新启动。
         )
         info_label.pack(pady=10, padx=10, anchor=tk.CENTER)
         
+        # 添加本地反馈管理按钮
+        feedback_manage_frame = ttk.Frame(parent)
+        feedback_manage_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        manage_button = ttk.Button(
+            feedback_manage_frame,
+            text="查看本地反馈记录",
+            command=self.show_local_feedback,
+            style="Custom.TButton"
+        )
+        manage_button.pack(side=tk.RIGHT, padx=5)
+        
         # 反馈类型
         type_frame = ttk.Frame(parent)
         type_frame.pack(fill=tk.X, padx=10, pady=5)
@@ -1755,7 +2180,7 @@ echo 更新完成，程序已重新启动。
             content_frame, 
             wrap=tk.WORD,
             font=self.default_font,
-            height=10,
+            height=8,  # 减小高度，为按钮留出更多空间
             relief=tk.SUNKEN,
             bd=2
         )
@@ -1768,6 +2193,10 @@ echo 更新完成，程序已重新启动。
         )
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         content_text.config(yscrollcommand=scrollbar.set)
+        
+        # 按钮框架 - 修改布局，不使用side=tk.BOTTOM确保按钮始终可见
+        button_frame = ttk.Frame(parent)
+        button_frame.pack(fill=tk.X, padx=10, pady=20)
         
         # 验证码功能
         import random
@@ -1801,7 +2230,7 @@ echo 更新完成，程序已重新启动。
         captcha_entry = ttk.Entry(button_frame, width=10, font=('Arial', 12))
         captcha_entry.pack(side=tk.LEFT, padx=(0, 10))
         
-        # 提交按钮
+        # 提交按钮函数
         def submit_feedback():
             # 获取反馈内容
             content = content_text.get("1.0", tk.END).strip()
@@ -1837,36 +2266,61 @@ echo 更新完成，程序已重新启动。
                 
                 feedback_file = os.path.join(feedback_dir, "feedback.json")
                 
-                # 读取现有反馈
+                # 增强的本地反馈存储功能
                 feedbacks = []
                 if os.path.exists(feedback_file):
-                    with open(feedback_file, 'r', encoding='utf-8') as f:
-                        feedbacks = json.load(f)
+                    try:
+                        with open(feedback_file, 'r', encoding='utf-8') as f:
+                            feedbacks = json.load(f)
+                    except json.JSONDecodeError:
+                        # 如果文件损坏，创建新的空列表
+                        logging.error("反馈文件损坏，创建新的反馈列表")
+                        feedbacks = []
                 
-                # 添加新反馈
+                # 添加反馈状态和时间戳
+                feedback_data['status'] = 'pending'  # pending, sent, failed
+                feedback_data['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 feedbacks.append(feedback_data)
                 
                 # 保存反馈
-                with open(feedback_file, 'w', encoding='utf-8') as f:
-                    json.dump(feedbacks, f, ensure_ascii=False, indent=2)
+                try:
+                    # 确保目录存在
+                    os.makedirs(os.path.dirname(feedback_file), exist_ok=True)
+                    with open(feedback_file, 'w', encoding='utf-8') as f:
+                        json.dump(feedbacks, f, ensure_ascii=False, indent=2)
+                    logging.info("反馈已成功保存到本地")
+                except Exception as e:
+                    logging.error(f"保存反馈到本地失败: {str(e)}")
                 
-                # 尝试发送到服务器
+                # 本地反馈存储已完成，现在尝试发送到服务器
                 server_success = False
                 try:
                     if self.check_internet_connection():
                         import urllib.request
                         import urllib.error
                         
-                        # 使用新的反馈接收端点
-                        feedback_url = "https://www.tomarens.com/submit_feedback"
-                        data = json.dumps(feedback_data).encode('utf-8')
-                        headers = {'Content-Type': 'application/json'}
-                        req = urllib.request.Request(feedback_url, data=data, headers=headers)
+                        # 使用统一域名，尝试多个端点
+                        DOMAIN = "tomarens.xyz"
+                        endpoints = [
+                            f"http://{DOMAIN}:8081/submit_feedback",  # 本地服务器配置
+                            f"https://{DOMAIN}/submit_feedback",      # HTTPS
+                            f"http://{DOMAIN}/submit_feedback",       # HTTP
+                        ]
                         
-                        with urllib.request.urlopen(req, timeout=15) as response:
-                            if response.status == 200:
-                                logging.info("反馈成功发送到服务器")
-                                server_success = True
+                        for endpoint in endpoints:
+                            try:
+                                data = json.dumps(feedback_data).encode('utf-8')
+                                headers = {'Content-Type': 'application/json'}
+                                req = urllib.request.Request(endpoint, data=data, headers=headers)
+                                
+                                with urllib.request.urlopen(req, timeout=10) as response:
+                                    if response.status == 200:
+                                        logging.info(f"反馈成功发送到服务器: {endpoint}")
+                                        server_success = True
+                                        break  # 成功后退出循环
+                            except Exception as inner_e:
+                                logging.warning(f"向 {endpoint} 发送反馈失败: {str(inner_e)}")
+                                continue  # 尝试下一个端点
                             else:
                                 logging.error(f"发送反馈到服务器失败，HTTP状态码: {response.status}")
                 except Exception as e:
@@ -1883,16 +2337,15 @@ echo 更新完成，程序已重新启动。
                 logging.error(f"保存反馈时出错: {str(e)}")
                 messagebox.showerror("提交失败", "保存反馈时出现错误，请稍后再试。")
         
-        button_frame = ttk.Frame(parent)
-        button_frame.pack(fill=tk.X, padx=10, pady=10, side=tk.BOTTOM)
-        
+        # 添加提交按钮到按钮框架 - 增大按钮尺寸
         submit_button = ttk.Button(
             button_frame, 
             text="提交反馈", 
             command=submit_feedback,
-            style="Accent.TButton"
+            style="Accent.TButton",
+            width=12  # 增大按钮宽度
         )
-        submit_button.pack(side=tk.RIGHT, padx=5)
+        submit_button.pack(side=tk.RIGHT, padx=15, pady=15)
     
     def _apply_theme_by_name(self, theme_name):
         """根据主题名称应用主题"""
@@ -2594,6 +3047,47 @@ echo 更新完成，程序已重新启动。
         except Exception as e:
             messagebox.showerror("计算错误", f"计算过程中出现错误：\n{str(e)}")
     
+    def calculate_fba_fee(self, weight_g, length_cm, width_cm, height_cm):
+        """
+        计算FBA费用
+        参数:
+        - weight_g: 重量(克)
+        - length_cm: 最长边(厘米)
+        - width_cm: 次长边(厘米)
+        - height_cm: 最短边(厘米)
+        返回:
+        - 包含尺寸分段、重量显示、围长显示和费用的字典
+        """
+        # 单位转换: 厘米转英寸 (1英寸 = 2.54厘米)
+        max_len_in = length_cm / 2.54
+        mid_len_in = width_cm / 2.54
+        min_len_in = height_cm / 2.54
+        
+        # 单位转换: 克转磅和盎司 (1磅 = 453.592克, 1盎司 = 28.3495克)
+        weight_lb = weight_g / 453.592
+        weight_oz = weight_g / 28.3495
+        
+        # 计算长度+围长
+        len_girth = max_len_in + 2 * (mid_len_in + min_len_in)
+        
+        # 判断尺寸分段
+        size_segment = self.determine_size_segment(
+            max_len_in, mid_len_in, min_len_in, len_girth, weight_lb, weight_oz
+        )
+        
+        # 计算费用
+        fee, _ = self.calculate_fee_with_steps(
+            size_segment, weight_lb, weight_oz, '磅'  # 使用磅作为单位
+        )
+        
+        # 准备返回结果
+        return {
+            'size_tier': size_segment,
+            'weight_display': f"{weight_lb:.2f} 磅 / {weight_oz:.2f} 盎司",
+            'girth_display': f"{len_girth:.2f} 英寸",
+            'fee': fee
+        }
+    
     def determine_size_segment(self, max_len, mid_len, min_len, len_girth, weight_lb, weight_oz):
         # 超大件判断
         is_oversized = (
@@ -2977,6 +3471,88 @@ echo 更新完成，程序已重新启动。
             button_frame = ttk.Frame(batch_window)
             button_frame.pack(fill=tk.X, pady=10, padx=10)
             
+            # 定义下载模板函数
+            def download_template():
+                try:
+                    # 创建示例数据
+                    template_data = [
+                        {'产品名称': '示例产品1', '重量(g)': 100, '最长边(cm)': 10, '次长边(cm)': 8, '最短边(cm)': 5},
+                        {'产品名称': '示例产品2', '重量(g)': 500, '最长边(cm)': 15, '次长边(cm)': 10, '最短边(cm)': 8},
+                        {'产品名称': '示例产品3', '重量(g)': 2000, '最长边(cm)': 30, '次长边(cm)': 20, '最短边(cm)': 15}
+                    ]
+                    
+                    # 询问保存格式
+                    format_window = tk.Toplevel(batch_window)
+                    format_window.title("选择模板格式")
+                    format_window.geometry("300x200")
+                    format_window.transient(batch_window)
+                    format_window.grab_set()
+                    
+                    ttk.Label(format_window, text="请选择模板文件格式：", font=self.default_font).pack(pady=20)
+                    
+                    format_var = tk.StringVar(value="excel")
+                    
+                    format_frame = ttk.Frame(format_window)
+                    format_frame.pack(pady=10)
+                    ttk.Radiobutton(format_frame, text="Excel格式 (.xlsx)", variable=format_var, value="excel").pack(anchor=tk.W, padx=20, pady=5)
+                    ttk.Radiobutton(format_frame, text="CSV格式 (.csv)", variable=format_var, value="csv").pack(anchor=tk.W, padx=20, pady=5)
+                    
+                    def save_template():
+                        format_type = format_var.get()
+                        format_window.destroy()
+                        
+                        # 打开文件保存对话框
+                        default_ext = ".xlsx" if format_type == "excel" else ".csv"
+                        filename = filedialog.asksaveasfilename(
+                            defaultextension=default_ext,
+                            filetypes=[("所有文件", "*.*")],
+                            title="保存模板文件"
+                        )
+                        
+                        if not filename:
+                            return
+                        
+                        try:
+                                if format_type == "excel":
+                                    # 尝试使用pandas导出Excel，如果失败则自动降级到CSV
+                                    try:
+                                        import pandas as pd
+                                        df = pd.DataFrame(template_data)
+                                        with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+                                            df.to_excel(writer, index=False)
+                                        messagebox.showinfo("成功", f"模板文件已保存到\n{filename}")
+                                    except ImportError:
+                                        # 自动降级到CSV格式，避免显示错误信息
+                                        csv_filename = filename.replace('.xlsx', '.csv')
+                                        import csv
+                                        with open(csv_filename, 'w', newline='', encoding='utf-8-sig') as f:
+                                            fieldnames = list(template_data[0].keys())
+                                            writer = csv.DictWriter(f, fieldnames=fieldnames)
+                                            writer.writeheader()
+                                            for data in template_data:
+                                                writer.writerow(data)
+                                        messagebox.showinfo("提示", f"已自动创建CSV模板文件\n{csv_filename}")
+                                else:
+                                    # 导出为CSV格式
+                                    import csv
+                                with open(filename, 'w', newline='', encoding='utf-8-sig') as f:
+                                    fieldnames = list(template_data[0].keys())
+                                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                                    writer.writeheader()
+                                    for data in template_data:
+                                        writer.writerow(data)
+                                messagebox.showinfo("成功", f"模板文件已保存到\n{filename}")
+                        except Exception as e:
+                            messagebox.showerror("错误", f"保存模板文件失败：\n{str(e)}")
+                    
+                    button_frame_template = ttk.Frame(format_window)
+                    button_frame_template.pack(pady=10)
+                    ttk.Button(button_frame_template, text="确定", command=save_template).pack(side=tk.LEFT, padx=10)
+                    ttk.Button(button_frame_template, text="取消", command=format_window.destroy).pack(side=tk.LEFT, padx=10)
+                    
+                except Exception as e:
+                    messagebox.showerror("错误", f"创建模板文件时出错：\n{str(e)}")
+            
             # 导入文件按钮
             def import_file():
                 try:
@@ -3011,6 +3587,8 @@ echo 更新完成，程序已重新启动。
                 except Exception as e:
                     messagebox.showerror("错误", f"导入文件时出错：\n{str(e)}")
             
+            # 按钮将在函数末尾创建
+            
             # 处理Excel文件
             def process_excel_file(filename):
                 try:
@@ -3018,7 +3596,48 @@ echo 更新完成，程序已重新启动。
                     import pandas as pd
                     
                     # 读取Excel文件
-                    df = pd.read_excel(filename)
+                    try:
+                        df = pd.read_excel(filename)
+                    except Exception as excel_error:
+                        # 如果读取Excel失败，尝试提示用户转成CSV格式
+                        result_text.insert(tk.END, f"读取Excel文件失败：{str(excel_error)}\n")
+                        result_text.insert(tk.END, "尝试将Excel文件转换为CSV格式...\n")
+                        result_text.update()
+                        
+                        # 提示用户手动转换或尝试其他方法
+                        if messagebox.askyesno("Excel读取失败", "无法读取Excel文件。这可能是由于缺少必要的依赖项。\n\n是否要尝试将Excel文件转换为CSV格式并继续处理？"):
+                            # 尝试使用临时CSV文件路径
+                            import tempfile
+                            import csv
+                            import os
+                            
+                            try:
+                                # 创建临时CSV文件
+                                csv_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.csv', encoding='utf-8-sig')
+                                csv_temp.close()
+                                
+                                # 尝试使用pandas转换格式
+                                try:
+                                    df = pd.read_excel(filename)
+                                    df.to_csv(csv_temp.name, index=False, encoding='utf-8-sig')
+                                    result_text.insert(tk.END, "成功将Excel文件转换为CSV格式\n")
+                                    result_text.update()
+                                    # 使用CSV处理函数处理转换后的文件
+                                    process_csv_file(csv_temp.name)
+                                    # 删除临时文件
+                                    os.unlink(csv_temp.name)
+                                    return
+                                except Exception as convert_error:
+                                    result_text.insert(tk.END, f"转换失败：{str(convert_error)}\n")
+                                    os.unlink(csv_temp.name)
+                                    messagebox.showinfo("提示", "请手动将Excel文件另存为CSV格式，然后选择CSV文件进行处理。")
+                                    return
+                            except Exception as temp_error:
+                                result_text.insert(tk.END, f"创建临时文件失败：{str(temp_error)}\n")
+                                messagebox.showinfo("提示", "请手动将Excel文件另存为CSV格式，然后选择CSV文件进行处理。")
+                                return
+                        else:
+                            return
                     
                     # 检查必要的列是否存在
                     required_columns = ['重量(g)', '最长边(cm)', '次长边(cm)', '最短边(cm)']
@@ -3041,10 +3660,13 @@ echo 更新完成，程序已重新启动。
                             batch_window.update()
                             
                             # 提取数据
-                            weight_g = float(row['重量(g)'])
-                            length_cm = float(row['最长边(cm)'])
-                            width_cm = float(row['次长边(cm)'])
-                            height_cm = float(row['最短边(cm)'])
+                            # 创建默认的column_map
+                            column_map = {}
+                            # 使用映射的列名或直接使用原始列名
+                            weight_g = float(row[column_map.get('重量(g)', '重量(g)')])
+                            length_cm = float(row[column_map.get('最长边(cm)', '最长边(cm)')])
+                            width_cm = float(row[column_map.get('次长边(cm)', '次长边(cm)')])
+                            height_cm = float(row[column_map.get('最短边(cm)', '最短边(cm)')])
                             
                             # 计算费用
                             calc_result = self.calculate_fba_fee(weight_g, length_cm, width_cm, height_cm)
@@ -3085,29 +3707,85 @@ echo 更新完成，程序已重新启动。
                             save_results(results)
                 
                 except ImportError:
-                    messagebox.showerror("错误", "需要安装pandas和openpyxl库来处理Excel文件")
+                    # 如果导入pandas失败，建议用户使用CSV格式
+                    result_text.insert(tk.END, "未找到pandas库，无法处理Excel文件\n")
+                    messagebox.showinfo("提示", "未安装pandas和openpyxl库。请将Excel文件另存为CSV格式，然后选择CSV文件进行处理。")
                 except Exception as e:
-                    messagebox.showerror("错误", f"处理Excel文件时出错：\n{str(e)}")
+                    # 捕获其他可能的错误
+                    result_text.insert(tk.END, f"处理Excel文件时出错：{str(e)}\n")
+                    result_text.insert(tk.END, "尝试将Excel文件另存为CSV格式可能会解决此问题\n")
+                    messagebox.showerror("错误", f"处理Excel文件时出错：\n{str(e)}\n\n请尝试将Excel文件另存为CSV格式，然后选择CSV文件进行处理。")
             
             # 处理CSV文件
             def process_csv_file(filename):
                 try:
-                    # 读取CSV文件
+                    # 定义必要的列名，确保在所有代码路径中都可用
+                    required_columns = ['重量(g)', '最长边(cm)', '次长边(cm)', '最短边(cm)']
+                    
+                    # 读取CSV文件 - 尝试多种编码格式
                     import csv
-                    with open(filename, 'r', encoding='utf-8-sig') as f:
-                        reader = csv.DictReader(f)
-                        rows = list(reader)
+                    # 常见的CSV编码格式列表，按优先级排序
+                    encodings = ['utf-8-sig', 'gbk', 'cp936', 'cp1252', 'latin-1']
+                    rows = None
+                    used_encoding = None
+                    
+                    # 尝试不同的编码格式
+                    for encoding in encodings:
+                        try:
+                            with open(filename, 'r', encoding=encoding) as f:
+                                reader = csv.DictReader(f)
+                                rows = list(reader)
+                            used_encoding = encoding
+                            break
+                        except UnicodeDecodeError:
+                            continue
+                    
+                    # 如果所有编码都失败
+                    if rows is None:
+                        raise UnicodeDecodeError('UTF-8', b'', 0, 1, '无法识别文件编码，请尝试使用Excel将文件另存为CSV UTF-8格式')
                     
                     # 检查必要的列是否存在
-                    required_columns = ['重量(g)', '最长边(cm)', '次长边(cm)', '最短边(cm)']
                     if not rows:
                         messagebox.showerror("错误", "CSV文件为空")
                         return
                     
-                    missing_columns = [col for col in required_columns if col not in rows[0]]
+                    # 获取实际的列名并进行清理（去除空格和其他可能的干扰字符）
+                    actual_columns = {col.strip() for col in rows[0].keys()}
+                    
+                    # 定义必要列的映射，支持多种可能的列名变体
+                    column_mappings = {
+                        '重量(g)': ['重量(g)', '重量', 'weight'],
+                        '最长边(cm)': ['最长边(cm)', '最长边', 'length', '长'],
+                        '次长边(cm)': ['次长边(cm)', '次长边', 'width', '宽'],
+                        '最短边(cm)': ['最短边(cm)', '最短边', 'height', '高']
+                    }
+                    
+                    # 尝试匹配列名
+                    column_map = {}
+                    missing_columns = []
+                    
+                    for req_col, possible_names in column_mappings.items():
+                        found = False
+                        for actual_col in actual_columns:
+                            # 不区分大小写进行匹配，并且考虑部分匹配
+                            actual_lower = actual_col.lower()
+                            for possible in possible_names:
+                                possible_lower = possible.lower()
+                                if possible_lower in actual_lower or actual_lower in possible_lower:
+                                    column_map[req_col] = actual_col
+                                    found = True
+                                    break
+                            if found:
+                                break
+                        if not found:
+                            missing_columns.append(req_col)
+                    
                     if missing_columns:
-                        messagebox.showerror("错误", f"文件缺少必要的列：{', '.join(missing_columns)}")
-                        return
+                        # 尝试使用原始逻辑再次检查，确保向后兼容性
+                        original_missing = [col for col in required_columns if col not in rows[0]]
+                        if original_missing:
+                            messagebox.showerror("错误", f"文件缺少必要的列：{', '.join(original_missing)}")
+                            return
                     
                     # 处理每一行数据
                     results = []
@@ -3121,11 +3799,11 @@ echo 更新完成，程序已重新启动。
                             progress_label.config(text=f"{int(progress)}%")
                             batch_window.update()
                             
-                            # 提取数据
-                            weight_g = float(row['重量(g)'])
-                            length_cm = float(row['最长边(cm)'])
-                            width_cm = float(row['次长边(cm)'])
-                            height_cm = float(row['最短边(cm)'])
+                            # 提取数据 - 使用column_map进行正确的列名映射
+                            weight_g = float(row[column_map.get('重量(g)', '重量(g)')])
+                            length_cm = float(row[column_map.get('最长边(cm)', '最长边(cm)')])
+                            width_cm = float(row[column_map.get('次长边(cm)', '次长边(cm)')])
+                            height_cm = float(row[column_map.get('最短边(cm)', '最短边(cm)')])
                             
                             # 计算费用
                             calc_result = self.calculate_fba_fee(weight_g, length_cm, width_cm, height_cm)
@@ -3221,92 +3899,21 @@ echo 更新完成，程序已重新启动。
                 except Exception as e:
                     messagebox.showerror("错误", f"保存CSV文件失败：\n{str(e)}")
             
-            # 添加示例文件按钮
-            def download_template():
-                try:
-                    # 创建示例数据
-                    template_data = [
-                        {'产品名称': '示例产品1', '重量(g)': 100, '最长边(cm)': 10, '次长边(cm)': 8, '最短边(cm)': 5},
-                        {'产品名称': '示例产品2', '重量(g)': 500, '最长边(cm)': 15, '次长边(cm)': 10, '最短边(cm)': 8},
-                        {'产品名称': '示例产品3', '重量(g)': 2000, '最长边(cm)': 30, '次长边(cm)': 20, '最短边(cm)': 15}
-                    ]
-                    
-                    # 询问保存格式
-                    format_window = tk.Toplevel(batch_window)
-                    format_window.title("选择模板格式")
-                    format_window.geometry("300x200")
-                    format_window.transient(batch_window)
-                    format_window.grab_set()
-                    
-                    ttk.Label(format_window, text="请选择模板文件格式：", font=self.default_font).pack(pady=20)
-                    
-                    format_var = tk.StringVar(value="excel")
-                    
-                    format_frame = ttk.Frame(format_window)
-                    format_frame.pack(pady=10)
-                    ttk.Radiobutton(format_frame, text="Excel格式 (.xlsx)", variable=format_var, value="excel").pack(anchor=tk.W, padx=20, pady=5)
-                    ttk.Radiobutton(format_frame, text="CSV格式 (.csv)", variable=format_var, value="csv").pack(anchor=tk.W, padx=20, pady=5)
-                    
-                    def save_template():
-                        format_type = format_var.get()
-                        format_window.destroy()
-                        
-                        # 打开文件保存对话框
-                        default_ext = ".xlsx" if format_type == "excel" else ".csv"
-                        filename = filedialog.asksaveasfilename(
-                            defaultextension=default_ext,
-                            filetypes=[("所有文件", "*.*")],
-                            title="保存模板文件"
-                        )
-                        
-                        if not filename:
-                            return
-                        
-                        try:
-                                if format_type == "excel":
-                                    # 尝试使用pandas导出Excel，如果失败则自动降级到CSV
-                                    try:
-                                        import pandas as pd
-                                        df = pd.DataFrame(template_data)
-                                        with pd.ExcelWriter(filename, engine='openpyxl') as writer:
-                                            df.to_excel(writer, index=False)
-                                        messagebox.showinfo("成功", f"模板文件已保存到\n{filename}")
-                                    except ImportError:
-                                        # 自动降级到CSV格式，避免显示错误信息
-                                        csv_filename = filename.replace('.xlsx', '.csv')
-                                        import csv
-                                        with open(csv_filename, 'w', newline='', encoding='utf-8-sig') as f:
-                                            fieldnames = list(template_data[0].keys())
-                                            writer = csv.DictWriter(f, fieldnames=fieldnames)
-                                            writer.writeheader()
-                                            for data in template_data:
-                                                writer.writerow(data)
-                                        messagebox.showinfo("提示", f"已自动创建CSV模板文件\n{csv_filename}")
-                                else:
-                                    # 导出为CSV格式
-                                    import csv
-                                with open(filename, 'w', newline='', encoding='utf-8-sig') as f:
-                                    fieldnames = list(template_data[0].keys())
-                                    writer = csv.DictWriter(f, fieldnames=fieldnames)
-                                    writer.writeheader()
-                                    for data in template_data:
-                                        writer.writerow(data)
-                                messagebox.showinfo("成功", f"模板文件已保存到\n{filename}")
-                        except Exception as e:
-                            messagebox.showerror("错误", f"保存模板文件失败：\n{str(e)}")
-                    
-                    button_frame_template = ttk.Frame(format_window)
-                    button_frame_template.pack(pady=10)
-                    ttk.Button(button_frame_template, text="确定", command=save_template).pack(side=tk.LEFT, padx=10)
-                    ttk.Button(button_frame_template, text="取消", command=format_window.destroy).pack(side=tk.LEFT, padx=10)
-                    
-                except Exception as e:
-                    messagebox.showerror("错误", f"创建模板文件时出错：\n{str(e)}")
+
             
-            # 添加按钮
-            ttk.Button(button_frame, text="导入文件", command=import_file, style="Accent.TButton").pack(side=tk.LEFT, padx=10)
-            ttk.Button(button_frame, text="下载模板", command=download_template, style="Accent.TButton").pack(side=tk.LEFT, padx=10)
-            ttk.Button(button_frame, text="关闭", command=batch_window.destroy, style="Accent.TButton").pack(side=tk.RIGHT, padx=10)
+            # 添加按钮 - 确保只创建一组按钮
+            # 先清空按钮框架，避免重复创建
+            for widget in button_frame.winfo_children():
+                widget.destroy()
+                
+            import_btn = ttk.Button(button_frame, text="导入文件", command=import_file, style="Accent.TButton")
+            import_btn.pack(side=tk.LEFT, padx=10)
+            
+            template_btn = ttk.Button(button_frame, text="下载模板", command=download_template, style="Accent.TButton")
+            template_btn.pack(side=tk.LEFT, padx=10)
+            
+            close_btn = ttk.Button(button_frame, text="关闭", command=batch_window.destroy, style="Accent.TButton")
+            close_btn.pack(side=tk.RIGHT, padx=10)
             
         except Exception as e:
             messagebox.showerror("错误", f"批量处理时出错：\n{str(e)}")

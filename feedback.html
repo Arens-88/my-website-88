@@ -261,8 +261,8 @@
             // 创建FormData对象
             const formData = new FormData(form);
             
-            // 发送POST请求
-            fetch('https://www.tomaren.xyz/submit_feedback', {
+            // 发送POST请求，使用统一域名并增加超时处理
+            fetch('http://tomarens.xyz:8081/submit_feedback', {
                 method: 'POST',
                 body: formData
             })

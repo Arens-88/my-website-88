@@ -36,7 +36,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     # 添加Windows版本兼容性设置
-    version='1.2.4.0',
+    version_file=None,
     company_name='Jerry Tom',
     product_name='FBA费用计算器',
     copyright='© 2025 Jerry Tom',
