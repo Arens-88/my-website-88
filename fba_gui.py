@@ -96,6 +96,11 @@ class FBAShippingCalculator:
         # 初始化当前页面
         self.current_page = "fba"
         
+        # 添加站点选择变量，默认为美国站
+        self.site_var = tk.StringVar(value="us")  # us表示美国站，jp表示日本站
+        self.current_site = "us"  # 设置当前站点，确保在创建UI之前就有这个属性
+        self.current_site = "us"  # 当前站点，用于单位转换判断
+        
         # 创建FBA计算器页面容器
         self.fba_frame = ttk.Frame(self.content_container)
         
@@ -108,6 +113,10 @@ class FBAShippingCalculator:
         # 为FBA计算器创建UI元素
         self.container = self.fba_frame  # 让原有代码使用fba_frame作为容器
         self.create_title()
+        
+        # 添加站点切换按钮
+        self.create_site_selector()
+        
         self.create_size_inputs()
         self.create_weight_inputs()
         self.create_segment_display()
@@ -1003,20 +1012,261 @@ class FBAShippingCalculator:
         )
         title_label.pack(anchor=tk.CENTER)
     
+    def create_site_selector(self):
+        # 创建站点选择器框架
+        site_frame = ttk.Frame(self.container)
+        site_frame.pack(pady=10, fill=tk.X)
+        
+        # 添加站点选择标签
+        ttk.Label(site_frame, text="选择站点：", font=self.default_font).pack(side=tk.LEFT, padx=10)
+        
+        # 创建站点选择按钮
+        self.us_button = ttk.Button(
+            site_frame,
+            text="美国站",
+            command=lambda: self.switch_site("us"),
+            style="Accent.TButton" if self.site_var.get() == "us" else "TButton"
+        )
+        self.us_button.pack(side=tk.LEFT, padx=5)
+        
+        self.jp_button = ttk.Button(
+            site_frame,
+            text="日本站",
+            command=lambda: self.switch_site("jp"),
+            style="Accent.TButton" if self.site_var.get() == "jp" else "TButton"
+        )
+        self.jp_button.pack(side=tk.LEFT, padx=5)
+    
+    def switch_site(self, site):
+        # 更新站点选择变量
+        self.site_var.set(site)
+        
+        # 更新按钮样式，高亮当前选中的站点
+        self.us_button.config(style="Accent.TButton" if site == "us" else "TButton")
+        self.jp_button.config(style="Accent.TButton" if site == "jp" else "TButton")
+        
+        # 清空结果区域
+        self.result_text.delete(1.0, tk.END)
+        
+        # 保存当前值以便单位转换
+        current_values = {}
+        if hasattr(self, 'max_len_var') and self.max_len_var.get():
+            try:
+                current_values['max_len'] = float(self.max_len_var.get())
+                current_values['mid_len'] = float(self.mid_len_var.get()) if hasattr(self, 'mid_len_var') and self.mid_len_var.get() else 0
+                current_values['min_len'] = float(self.min_len_var.get()) if hasattr(self, 'min_len_var') and self.min_len_var.get() else 0
+            except ValueError:
+                pass
+        
+        if hasattr(self, 'weight_var') and self.weight_var.get():
+            try:
+                current_values['weight'] = float(self.weight_var.get())
+            except ValueError:
+                pass
+        
+        # 更新尺寸输入框架的标题和单位
+        if site == "us":
+            # 美国站设置
+            if hasattr(self, 'size_frame'):
+                self.size_frame.config(text="商品尺寸（英寸）")
+            if hasattr(self, 'weight_frame'):
+                self.weight_frame.config(text="商品重量（磅/盎司）")
+            
+            # 转换单位：厘米 -> 英寸，克 -> 磅
+            if 'max_len' in current_values and self.current_site == "jp":
+                # 厘米转英寸 (1厘米 = 0.3937英寸)
+                self.max_len_var.set(round(current_values['max_len'] * 0.3937, 2))
+                self.mid_len_var.set(round(current_values['mid_len'] * 0.3937, 2))
+                self.min_len_var.set(round(current_values['min_len'] * 0.3937, 2))
+            
+            if 'weight' in current_values and self.current_site == "jp":
+                # 克转磅 (1克 = 0.00220462磅)
+                self.weight_var.set(round(current_values['weight'] * 0.00220462, 2))
+            
+            # 显示美国站特有的输入框
+            if hasattr(self, 'weight_oz_entry'):
+                self.weight_oz_entry.grid(row=0, column=2, padx=5)
+            if hasattr(self, 'weight_oz_label'):
+                self.weight_oz_label.grid(row=0, column=3, padx=5)
+            
+            # 显示重量单位选择行
+            if hasattr(self, 'weight_frame') and hasattr(self.weight_frame, 'children'):
+                for child in self.weight_frame.winfo_children():
+                    if isinstance(child, ttk.Frame) and child.winfo_children():
+                        # 检查第一个子元素是否是单位标签
+                        first_child = child.winfo_children()[0]
+                        if isinstance(first_child, ttk.Label) and first_child.cget('text') == "重量单位:":
+                            child.pack(fill=tk.X, pady=(0, 10))
+                            break
+            
+            # 更新尺寸分段框架标题
+            if hasattr(self, 'segment_frame'):
+                self.segment_frame.config(text="商品尺寸分段")
+            
+            # 显示切换提示
+            self.result_text.insert(tk.END, "已切换到美国站计算模式\n")
+        else:
+            # 日本站设置
+            if hasattr(self, 'size_frame'):
+                self.size_frame.config(text="商品尺寸（厘米）")
+            if hasattr(self, 'weight_frame'):
+                self.weight_frame.config(text="商品重量（克）")
+            
+            # 转换单位：英寸 -> 厘米，磅 -> 克
+            if 'max_len' in current_values and self.current_site == "us":
+                # 英寸转厘米 (1英寸 = 2.54厘米)
+                self.max_len_var.set(round(current_values['max_len'] * 2.54, 2))
+                self.mid_len_var.set(round(current_values['mid_len'] * 2.54, 2))
+                self.min_len_var.set(round(current_values['min_len'] * 2.54, 2))
+            
+            if 'weight' in current_values and self.current_site == "us":
+                # 磅转克 (1磅 = 453.592克)
+                self.weight_var.set(round(current_values['weight'] * 453.592, 2))
+            
+            # 隐藏美国站特有的输入框
+            if hasattr(self, 'weight_oz_entry'):
+                self.weight_oz_entry.grid_remove()
+            if hasattr(self, 'weight_oz_label'):
+                self.weight_oz_label.grid_remove()
+            
+            # 隐藏重量单位选择行
+            if hasattr(self, 'weight_frame') and hasattr(self.weight_frame, 'children'):
+                for child in self.weight_frame.winfo_children():
+                    if isinstance(child, ttk.Frame) and child.winfo_children():
+                        # 检查第一个子元素是否是单位标签
+                        first_child = child.winfo_children()[0]
+                        if isinstance(first_child, ttk.Label) and first_child.cget('text') == "重量单位:":
+                            child.pack_forget()
+                            break
+            
+            # 更新尺寸分段框架标题
+            if hasattr(self, 'segment_frame'):
+                self.segment_frame.config(text="商品尺寸分段 (最长边)")
+            
+            # 清空尺寸分段显示
+            if hasattr(self, 'segment_display_var'):
+                self.segment_display_var.set("请输入商品尺寸和重量")
+            
+            # 显示日本站特有的输入框
+            if hasattr(self, 'price_over_1000_check'):
+                # 使用pack布局而不是grid，保持与容器一致
+                self.price_over_1000_check.pack(pady=5, anchor=tk.W)
+            else:
+                # 创建价格超过1000日元的复选框
+                self.price_over_1000_var = tk.BooleanVar(value=True)
+                self.price_over_1000_check = ttk.Checkbutton(
+                    self.weight_frame,
+                    text="价格超过1000日元",
+                    variable=self.price_over_1000_var
+                )
+                # 使用pack布局
+                self.price_over_1000_check.pack(pady=5, anchor=tk.W)
+            
+            # 添加冷冻商品复选框
+            if hasattr(self, 'is_frozen_check'):
+                self.is_frozen_check.pack(pady=5, anchor=tk.W)
+            else:
+                self.is_frozen_var = tk.BooleanVar(value=False)
+                self.is_frozen_check = ttk.Checkbutton(
+                    self.weight_frame,
+                    text="冷冻商品",
+                    variable=self.is_frozen_var
+                )
+                self.is_frozen_check.pack(pady=5, anchor=tk.W)
+            # 显示切换提示
+            self.result_text.insert(tk.END, "已切换到日本站计算模式\n")
+        
+        # 更新单位标签（在所有站点设置之后执行，确保标签已经创建）
+        # 更新尺寸单位标签
+        if hasattr(self, 'size_unit_labels') and self.size_unit_labels:
+            target_unit = "英寸" if site == "us" else "厘米"
+            for label in self.size_unit_labels:
+                # 强制设置正确的单位标签文本
+                label.config(text=target_unit)
+                # 记录日志以便调试
+                print(f"更新尺寸单位标签 -> {target_unit}")
+        
+        # 更新重量单位标签
+        if hasattr(self, 'weight_unit_label'):
+            target_weight_unit = "磅" if site == "us" else "克"
+            self.weight_unit_label.config(text=target_weight_unit)
+            # 记录日志以便调试
+            print(f"更新重量单位标签: {target_weight_unit}")
+        
+        # 确保框架标题也正确更新
+        if hasattr(self, 'size_frame'):
+            size_frame_title = "商品尺寸（英寸）" if site == "us" else "商品尺寸（厘米）"
+            self.size_frame.config(text=size_frame_title)
+        
+        if hasattr(self, 'weight_frame'):
+            weight_frame_title = "商品重量（磅/盎司）" if site == "us" else "商品重量（克）"
+            self.weight_frame.config(text=weight_frame_title)
+        
+        # 更新当前站点
+        self.current_site = site
+        
+        # 提示用户注意单位变化
+        self.result_text.insert(tk.END, f"当前单位：{'英寸/磅' if site == 'us' else '厘米/克'}")
+        
+        # 移除对不存在的reset_inputs方法的调用
+        pass
+    
     def create_size_inputs(self):
+        # 根据当前站点设置初始尺寸单位和框架文本
+        default_size_unit = "英寸"
+        frame_text = "商品尺寸（英寸）"
+        
+        if hasattr(self, 'current_site') and self.current_site == "jp":
+            default_size_unit = "厘米"
+            frame_text = "商品尺寸（厘米）"
+        
         # 尺寸输入框架
-        size_frame = ttk.LabelFrame(self.container, text="商品尺寸（英寸）", padding="15")
+        size_frame = ttk.LabelFrame(self.container, text=frame_text, padding="15")
         size_frame.pack(fill=tk.X, pady=(0, 15))
+        self.size_frame = size_frame
         
         # 尺寸变量
         self.max_len_var = tk.StringVar()
         self.mid_len_var = tk.StringVar()
         self.min_len_var = tk.StringVar()
         
-        # 创建尺寸输入行
-        self.create_input_row(size_frame, "最长边:", self.max_len_var, default_unit="英寸")
-        self.create_input_row(size_frame, "次长边:", self.mid_len_var, default_unit="英寸")
-        self.create_input_row(size_frame, "最短边:", self.min_len_var, default_unit="英寸")
+        # 存储尺寸单位标签引用
+        self.size_unit_labels = []
+        
+        # 根据当前站点直接创建正确单位的输入行
+        if hasattr(self, 'current_site'):
+            if self.current_site == "jp":
+                # 日本站：使用厘米单位
+                max_len_label = self.create_input_row(size_frame, "最长边:", self.max_len_var, default_unit="厘米")
+                mid_len_label = self.create_input_row(size_frame, "次长边:", self.mid_len_var, default_unit="厘米")
+                min_len_label = self.create_input_row(size_frame, "最短边:", self.min_len_var, default_unit="厘米")
+                # 立即设置正确的单位标签文本
+                max_len_label.config(text="厘米")
+                mid_len_label.config(text="厘米")
+                min_len_label.config(text="厘米")
+            else:
+                # 美国站：使用英寸单位
+                max_len_label = self.create_input_row(size_frame, "最长边:", self.max_len_var, default_unit="英寸")
+                mid_len_label = self.create_input_row(size_frame, "次长边:", self.mid_len_var, default_unit="英寸")
+                min_len_label = self.create_input_row(size_frame, "最短边:", self.min_len_var, default_unit="英寸")
+                # 立即设置正确的单位标签文本
+                max_len_label.config(text="英寸")
+                mid_len_label.config(text="英寸")
+                min_len_label.config(text="英寸")
+        else:
+            # 默认情况：使用默认单位
+            max_len_label = self.create_input_row(size_frame, "最长边:", self.max_len_var, default_unit=default_size_unit)
+            mid_len_label = self.create_input_row(size_frame, "次长边:", self.mid_len_var, default_unit=default_size_unit)
+            min_len_label = self.create_input_row(size_frame, "最短边:", self.min_len_var, default_unit=default_size_unit)
+            # 设置默认单位标签文本
+            max_len_label.config(text=default_size_unit)
+            mid_len_label.config(text=default_size_unit)
+            min_len_label.config(text=default_size_unit)
+        
+        # 保存单位标签引用以便后续更新
+        self.size_unit_labels.append(max_len_label)
+        self.size_unit_labels.append(mid_len_label)
+        self.size_unit_labels.append(min_len_label)
     
     def create_input_row(self, parent, label_text, var, default_unit="英寸"):
         row = ttk.Frame(parent)
@@ -1042,17 +1292,14 @@ class FBAShippingCalculator:
         # 绑定输入事件，实时更新尺寸分段
         entry.bind("<KeyRelease>", lambda event: self.update_size_segment())
         
-        # 显示完整的单位名称（包括英文缩写）
-        unit_display_map = {
-            "磅": "磅 (lb)",
-            "盎司": "盎司 (oz)",
-            "克": "克 (g)",
-            "千克": "千克 (kg)",
-            "英寸": "英寸"
-        }
-        display_text = unit_display_map.get(default_unit, default_unit)
-        unit_label = ttk.Label(row, text=display_text)
+        # 直接使用传入的default_unit作为显示文本，不进行映射
+        # 这样可以确保create_size_inputs和create_weight_inputs方法中设置的单位能直接显示
+        unit_label = ttk.Label(row, text=default_unit)
         unit_label.pack(side=tk.LEFT)
+        
+        # 记录日志以便调试
+        print(f"创建输入行，单位: {default_unit}")
+        
         return unit_label
         
     def create_status_bar(self):
@@ -2395,8 +2642,9 @@ echo 更新完成，程序已重新启动。
     
     def create_weight_inputs(self):
         # 重量输入框架
-        weight_frame = ttk.LabelFrame(self.container, text="商品重量", padding="15")
-        weight_frame.pack(fill=tk.X, pady=(0, 15))
+        self.weight_frame = ttk.LabelFrame(self.container, text="商品重量", padding="15")
+        self.weight_frame.pack(fill=tk.X, pady=(0, 15))
+        weight_frame = self.weight_frame
         
         # 重量单位变量
         self.weight_unit_var = tk.StringVar(value="磅")
@@ -2437,13 +2685,52 @@ echo 更新完成，程序已重新启动。
         
         # 重量值输入
         self.weight_var = tk.StringVar()
-        # 保存重量单位标签引用，并设置默认单位
-        self.weight_unit_label = self.create_input_row(
-            weight_frame, 
-            "重量值:", 
-            self.weight_var, 
-            default_unit="磅"
-        )
+        
+        # 根据当前站点设置默认单位标签
+        default_unit = "磅"
+        if hasattr(self, 'current_site') and self.current_site == "jp":
+            default_unit = "克"
+        
+        # 根据当前站点设置初始UI状态
+        if hasattr(self, 'current_site'):
+            if self.current_site == "jp":
+                # 日本站：设置克单位，隐藏单位选择
+                self.weight_unit_var.set("克")
+                # 创建重量输入行，直接使用正确的默认单位
+                self.weight_unit_label = self.create_input_row(
+                    weight_frame, 
+                    "重量值:", 
+                    self.weight_var, 
+                    default_unit="克"
+                )
+                # 移除强制设置，让单位标签直接使用default_unit值
+                pass
+                # 隐藏单位选择
+                unit_row.pack_forget()
+            else:
+                # 美国站：设置磅单位，显示单位选择
+                self.weight_unit_var.set("磅")
+                # 创建重量输入行，使用磅单位
+                self.weight_unit_label = self.create_input_row(
+                    weight_frame, 
+                    "重量值:", 
+                    self.weight_var, 
+                    default_unit="磅"
+                )
+                # 移除强制设置，让单位标签直接使用default_unit值
+                pass
+                # 显示单位选择
+                unit_row.pack(fill=tk.X, pady=(0, 10))
+        else:
+            # 默认情况（没有current_site属性）
+            self.weight_unit_label = self.create_input_row(
+                weight_frame, 
+                "重量值:", 
+                self.weight_var, 
+                default_unit=default_unit
+            )
+            # 默认显示单位选择
+            unit_row.pack(fill=tk.X, pady=(0, 10))
     
     def create_segment_display(self):
         # 尺寸分段显示框架
@@ -2587,6 +2874,12 @@ echo 更新完成，程序已重新启动。
                 self.calculation_history.clear()
         
     def on_weight_unit_change(self):
+        # 检查当前站点，如果是日本站，直接显示克单位并不执行转换
+        if hasattr(self, 'current_site') and self.current_site == "jp":
+            # 日本站时始终显示克单位
+            self.weight_unit_label.config(text="克 (g)")
+            return
+        
         # 获取新的单位和当前重量值
         new_unit = self.weight_unit_var.get()
         weight_value = self.weight_var.get()
@@ -2600,7 +2893,7 @@ echo 更新完成，程序已重新启动。
         self.weight_unit_label.config(text=display_text)
         
         # 如果有重量值且单位发生了变化，则进行转换
-        if weight_value and self.last_weight_unit != new_unit:
+        if weight_value and hasattr(self, 'last_weight_unit') and self.last_weight_unit != new_unit:
             try:
                 weight = float(weight_value)
                 
@@ -2631,7 +2924,8 @@ echo 更新完成，程序已重新启动。
                 pass
         
         # 更新最后选择的单位
-        self.last_weight_unit = new_unit
+        if hasattr(self, 'last_weight_unit'):
+            self.last_weight_unit = new_unit
     
     def update_result(self, text):
         # 更新结果显示
@@ -2646,35 +2940,45 @@ echo 更新完成，程序已重新启动。
             # 获取输入值
             if not (self.max_len_var.get() and self.mid_len_var.get() and 
                    self.min_len_var.get() and self.weight_var.get()):
+                # 输入不完整时显示提示信息
+                if hasattr(self, 'segment_display_var'):
+                    self.segment_display_var.set("请输入商品尺寸和重量")
                 return
             
             max_len = float(self.max_len_var.get())
             mid_len = float(self.mid_len_var.get())
             min_len = float(self.min_len_var.get())
             weight = float(self.weight_var.get())
-            weight_unit = self.weight_unit_var.get()
             
             # 验证输入
             if max_len <= 0 or mid_len <= 0 or min_len <= 0 or weight <= 0:
+                # 输入无效时显示提示信息
+                if hasattr(self, 'segment_display_var'):
+                    self.segment_display_var.set("请输入有效的数值")
                 return
             
-            # 计算长度+围长
-            len_girth = max_len + 2 * (mid_len + min_len)
-            
-            # 单位转换
-            weight_oz = weight if weight_unit == '盎司' else weight * 16
-            weight_lb = weight if weight_unit == '磅' else weight / 16
-            
-            # 判断尺寸分段
-            size_segment = self.determine_size_segment(
-                max_len, mid_len, min_len, len_girth, weight_lb, weight_oz
-            )
+            # 根据当前站点使用不同的尺寸分段方法
+            if hasattr(self, 'current_site') and self.current_site == "jp":
+                # 日本站：使用最长边判断尺寸分段
+                size_segment = self.determine_size_segment_jp(max_len)
+            else:
+                # 美国站：使用完整的尺寸分段逻辑
+                weight_unit = self.weight_unit_var.get()
+                len_girth = max_len + 2 * (mid_len + min_len)
+                weight_oz = weight if weight_unit == '盎司' else weight * 16
+                weight_lb = weight if weight_unit == '磅' else weight / 16
+                size_segment = self.determine_size_segment(
+                    max_len, mid_len, min_len, len_girth, weight_lb, weight_oz
+                )
             
             # 更新显示
-            self.segment_display_var.set(size_segment)
+            if hasattr(self, 'segment_display_var'):
+                self.segment_display_var.set(size_segment)
             
         except (ValueError, TypeError):
-            # 输入不完整或无效时不更新
+            # 输入不完整或无效时显示提示信息
+            if hasattr(self, 'segment_display_var'):
+                self.segment_display_var.set("请输入有效的数值")
             pass
     
     def _apply_theme_to_widget(self, widget):
@@ -2979,6 +3283,9 @@ echo 更新完成，程序已重新启动。
     
     def calculate_shipping(self):
         try:
+            # 获取当前选中的站点
+            current_site = self.site_var.get()
+            
             # 获取输入值
             max_len = float(self.max_len_var.get())
             mid_len = float(self.mid_len_var.get())
@@ -2991,51 +3298,101 @@ echo 更新完成，程序已重新启动。
                 messagebox.showerror("输入错误", "所有数值必须大于0！")
                 return
             
-            # 计算长度+围长
-            len_girth = max_len + 2 * (mid_len + min_len)
-            
-            # 单位转换
-            weight_oz = weight if weight_unit == '盎司' else weight * 16
-            weight_lb = weight if weight_unit == '磅' else weight / 16
-            
-            # 判断尺寸分段
-            size_segment = self.determine_size_segment(
-                max_len, mid_len, min_len, len_girth, weight_lb, weight_oz
-            )
-            
-            # 计算费用并获取详细计算过程
-            fee, calculation_steps = self.calculate_fee_with_steps(
-                size_segment, weight_lb, weight_oz, weight_unit
-            )
-            
-            # 生成结果文本
-            result_text = f"===== 计算结果 =====\n\n"
-            result_text += f"📦 商品尺寸分段：{size_segment}\n\n"
-            result_text += f"⚖️ 重量：{weight} {weight_unit}\n"
-            result_text += f"   转换：{weight_lb:.2f} 磅 / {weight_oz:.2f} 盎司\n\n"
-            result_text += f"📏 尺寸详情：\n"
-            result_text += f"   最长边：{max_len} 英寸\n"
-            result_text += f"   次长边：{mid_len} 英寸\n"
-            result_text += f"   最短边：{min_len} 英寸\n"
-            result_text += f"   长度+围长：{len_girth:.2f} 英寸\n\n"
-            result_text += f"💰 配送费：${fee}\n\n"
-            result_text += f"===== 计算过程 =====\n\n{calculation_steps}"
+            if current_site == "us":
+                # 美国站计算逻辑
+                # 计算长度+围长
+                len_girth = max_len + 2 * (mid_len + min_len)
+                
+                # 单位转换
+                weight_oz = weight if weight_unit == '盎司' else weight * 16
+                weight_lb = weight if weight_unit == '磅' else weight / 16
+                
+                # 判断尺寸分段
+                size_segment = self.determine_size_segment(
+                    max_len, mid_len, min_len, len_girth, weight_lb, weight_oz
+                )
+                
+                # 计算费用并获取详细计算过程
+                fee, calculation_steps = self.calculate_fee_with_steps(
+                    size_segment, weight_lb, weight_oz, weight_unit
+                )
+                
+                # 生成结果文本
+                result_text = f"===== 计算结果 =====\n\n"
+                result_text += f"📦 商品尺寸分段：{size_segment}\n\n"
+                result_text += f"⚖️ 重量：{weight} {weight_unit}\n"
+                result_text += f"   转换：{weight_lb:.2f} 磅 / {weight_oz:.2f} 盎司\n\n"
+                result_text += f"📏 尺寸详情：\n"
+                result_text += f"   最长边：{max_len} 英寸\n"
+                result_text += f"   次长边：{mid_len} 英寸\n"
+                result_text += f"   最短边：{min_len} 英寸\n"
+                result_text += f"   长度+围长：{len_girth:.2f} 英寸\n\n"
+                result_text += f"💰 配送费：${fee}\n\n"
+                result_text += f"===== 计算过程 =====\n\n{calculation_steps}"
+                
+                # 保存到历史记录
+                calculation_record = {
+                    'timestamp': datetime.now(),
+                    'site': 'us',
+                    'max_len': max_len,
+                    'mid_len': mid_len,
+                    'min_len': min_len,
+                    'weight': weight,
+                    'weight_unit': weight_unit,
+                    'size_segment': size_segment,
+                    'shipping_fee': fee,
+                    'len_girth': len_girth
+                }
+            else:
+                # 日本站计算逻辑
+                # 计算总尺寸（日本站使用总尺寸判断）
+                total_size = max_len + mid_len + min_len
+                
+                # 检查商品价格
+                # 使用用户在界面上选择的价格信息
+                price_over_1000 = self.price_over_1000_var.get() if hasattr(self, 'price_over_1000_var') else True
+                
+                # 判断尺寸分段
+                size_segment = self.determine_size_segment_jp(max_len)
+                
+                # 检查是否为冷冻商品
+                is_frozen = self.is_frozen_var.get() if hasattr(self, 'is_frozen_var') else False
+                
+                # 计算费用并获取详细计算过程
+                fee, calculation_steps = self.calculate_fee_with_steps_jp(
+                    size_segment, weight, price_over_1000, is_frozen
+                )
+                
+                # 生成结果文本
+                result_text = f"===== 计算结果 =====\n\n"
+                result_text += f"📦 商品尺寸分段：{size_segment}\n\n"
+                result_text += f"⚖️ 重量：{weight} 克\n\n"
+                result_text += f"📏 尺寸详情：\n"
+                result_text += f"   最长边：{max_len} 厘米\n"
+                result_text += f"   次长边：{mid_len} 厘米\n"
+                result_text += f"   最短边：{min_len} 厘米\n"
+                result_text += f"   总尺寸：{total_size} 厘米\n\n"
+                result_text += f"💰 配送费：{fee} 日元\n\n"
+                result_text += f"===== 计算过程 =====\n\n{calculation_steps}"
+                
+                # 保存到历史记录
+                calculation_record = {
+                    'timestamp': datetime.now(),
+                    'site': 'jp',
+                    'max_len': max_len,
+                    'mid_len': mid_len,
+                    'min_len': min_len,
+                    'weight': weight,
+                    'weight_unit': weight_unit,
+                    'size_segment': size_segment,
+                    'shipping_fee': fee,
+                    'total_size': total_size
+                }
             
             # 更新结果
             self.update_result(result_text)
             
-            # 保存到历史记录
-            calculation_record = {
-                'timestamp': datetime.now(),
-                'max_len': max_len,
-                'mid_len': mid_len,
-                'min_len': min_len,
-                'weight': weight,
-                'weight_unit': weight_unit,
-                'size_segment': size_segment,
-                'shipping_fee': fee,
-                'len_girth': len_girth
-            }
+            # 添加到历史记录
             self.calculation_history.append(calculation_record)
             
             # 限制历史记录数量，最多保存100条
@@ -3087,6 +3444,273 @@ echo 更新完成，程序已重新启动。
             'girth_display': f"{len_girth:.2f} 英寸",
             'fee': fee
         }
+    
+    def determine_size_segment_jp(self, max_len_cm):
+        """
+        判断日本站的尺寸分段（6.1日本站FBA费用计算模块）
+        参数:
+        - max_len_cm: 最长边(厘米)
+        返回:
+        - 尺寸分段描述
+        """
+        # 根据新的日本站FBA配送费规则，区分不同尺寸分段
+        # 新规则包括：小号、标准、大件、超大件等类别
+        
+        # 小号：不超过23厘米×35厘米×10厘米
+        # 这里简化处理，主要根据最长边判断
+        if max_len_cm <= 35:
+            return "小号"
+        # 标准尺寸：不超过80厘米
+        elif max_len_cm <= 80:
+            return "标准"
+        # 大件：不超过120厘米
+        elif max_len_cm <= 120:
+            return "大件"
+        # 超大件：超过120厘米但不超过200厘米
+        elif max_len_cm <= 200:
+            return "超大件"
+        else:
+            return "超大件（超出200厘米）"
+    
+    def calculate_fee_with_steps_jp(self, size_segment, weight_g, price_over_1000, is_frozen=False):
+        """
+        计算日本站FBA配送费用并返回详细计算过程（6.1日本站FBA费用计算模块）
+        参数:
+        - size_segment: 尺寸分段
+        - weight_g: 重量(克)
+        - price_over_1000: 价格是否超过1000日元
+        - is_frozen: 是否为冷冻商品
+        返回:
+        - (费用, 计算步骤)
+        """
+        steps = []
+        
+        # 获取最大长度（从UI输入中获取）
+        max_len_cm = 0
+        if hasattr(self, 'max_len_var') and self.max_len_var.get():
+            try:
+                max_len_cm = float(self.max_len_var.get())
+            except ValueError:
+                pass
+        
+        # 转换重量为千克
+        weight_kg = weight_g / 1000
+        
+        # 记录基本信息
+        steps.append("===== 日本站FBA配送费计算 =====")
+        steps.append(f"1. 根据尺寸分段 '{size_segment}' 计算费用")
+        steps.append(f"2. 商品价格{'超过' if price_over_1000 else '不超过'}1000日元")
+        steps.append(f"3. 商品重量: {weight_g} 克 ({weight_kg:.2f} 千克)")
+        steps.append(f"4. 商品最长边: {max_len_cm} 厘米")
+        steps.append(f"5. 商品类型: {'冷冻商品' if is_frozen else '非冷冻商品'}")
+        
+        # 根据新表格定义的费用标准
+        # 选择正确的费用表（价格超过/不超过1000日元）
+        if price_over_1000:
+            steps.append("6. 使用价格超过1000日元的费用标准")
+        else:
+            steps.append("6. 使用价格不超过1000日元的费用标准")
+        
+        # 根据尺寸分段和重量计算费用
+        fee = 0
+        
+        # 如果是冷冻商品，使用冷冻商品的费用标准
+        if is_frozen:
+            # 冷冻商品 - 小号尺寸费用
+            if size_segment == "小号":
+                if weight_g <= 250:
+                    fee = 695 if price_over_1000 else 647
+                    steps.append(f"7. 冷冻商品-小号（≤250克）: {fee} 日元")
+            
+            # 冷冻商品 - 标准尺寸费用
+            elif size_segment == "标准":
+                if max_len_cm <= 26:
+                    fee = 867 if price_over_1000 else 697
+                    steps.append(f"7. 冷冻商品-标准尺寸-1（≤26厘米）: {fee} 日元")
+                elif max_len_cm <= 32:
+                    fee = 788 if price_over_1000 else 723
+                    steps.append(f"7. 冷冻商品-标准尺寸-2（≤32厘米）: {fee} 日元")
+                elif max_len_cm <= 45:
+                    fee = 830 if price_over_1000 else 754
+                    steps.append(f"7. 冷冻商品-标准尺寸-3（≤45厘米）: {fee} 日元")
+                elif max_len_cm <= 60:
+                    fee = 960 if price_over_1000 else 874
+                    steps.append(f"7. 冷冻商品-标准尺寸-4（≤60厘米）: {fee} 日元")
+                elif max_len_cm <= 80:
+                    if weight_kg <= 2:
+                        fee = 898 if price_over_1000 else 804
+                        steps.append(f"7. 冷冻商品-标准尺寸-5（≤80厘米，≤2千克）: {fee} 日元")
+                    elif weight_kg <= 2.5:
+                        fee = 987 if price_over_1000 else 917
+                        steps.append(f"7. 冷冻商品-标准尺寸-6（≤80厘米，≤2.5千克）: {fee} 日元")
+                    elif weight_kg <= 3.5:
+                        fee = 1027 if price_over_1000 else 941
+                        steps.append(f"7. 冷冻商品-标准尺寸-7（≤80厘米，≤3.5千克）: {fee} 日元")
+                    else:
+                        fee = 1071 if price_over_1000 else 941
+                        steps.append(f"7. 冷冻商品-标准尺寸-8（≤80厘米，>3.5千克）: {fee} 日元")
+            
+            # 冷冻商品 - 大件费用
+            elif size_segment == "大件":
+                if max_len_cm <= 60:
+                    if weight_kg <= 2:
+                        fee = 984 if price_over_1000 else 898
+                        steps.append(f"7. 冷冻商品-大件-1（≤60厘米，≤2千克）: {fee} 日元")
+                elif max_len_cm <= 80:
+                    if weight_kg <= 2:
+                        fee = 990 if price_over_1000 else 900
+                        steps.append(f"7. 冷冻商品-大件-2（≤80厘米，≤2千克）: {fee} 日元")
+                    elif weight_kg <= 5:
+                        fee = 1080 if price_over_1000 else 983
+                        steps.append(f"7. 冷冻商品-大件-3（≤80厘米，≤5千克）: {fee} 日元")
+                elif max_len_cm <= 100:
+                    fee = 1153 if price_over_1000 else 1041
+                    steps.append(f"7. 冷冻商品-大件-4（≤100厘米）: {fee} 日元")
+            
+            # 冷冻商品 - 超大件费用
+            elif size_segment == "超大件":
+                if max_len_cm <= 120:
+                    fee = 1559 if price_over_1000 else 1434
+                    steps.append(f"7. 冷冻商品-超大件-1（≤120厘米）: {fee} 日元")
+                elif max_len_cm <= 140:
+                    fee = 1925 if price_over_1000 else 1760
+                    steps.append(f"7. 冷冻商品-超大件-2（≤140厘米）: {fee} 日元")
+                elif max_len_cm <= 170:
+                    fee = 2760 if price_over_1000 else 2600
+                    steps.append(f"7. 冷冻商品-超大件-3（≤170厘米）: {fee} 日元")
+                elif max_len_cm <= 200:
+                    fee = 3720 if price_over_1000 else 3500
+                    steps.append(f"7. 冷冻商品-超大件-4（≤200厘米）: {fee} 日元")
+            
+            # 冷冻商品 - 超大件（超出200厘米）
+            elif size_segment == "超大件（超出200厘米）":
+                fee = 4820 if price_over_1000 else 4620
+                steps.append(f"7. 冷冻商品-超大件（超出200厘米）: {fee} 日元")
+                steps.append("注意：超过200厘米或超过40千克的商品可能需要支付额外的尺寸费用")
+        else:
+            # 非冷冻商品 - 小号尺寸费用
+            if size_segment == "小号":
+                if weight_g <= 250:
+                    fee = 630 if price_over_1000 else 589
+                    steps.append(f"7. 非冷冻商品-小号（≤250克）: {fee} 日元")
+            
+            # 非冷冻商品 - 标准尺寸费用
+            elif size_segment == "标准":
+                if max_len_cm <= 26:
+                    fee = 807 if price_over_1000 else 677
+                    steps.append(f"7. 非冷冻商品-标准尺寸-1（≤26厘米）: {fee} 日元")
+                elif max_len_cm <= 32:
+                    fee = 781 if price_over_1000 else 723
+                    steps.append(f"7. 非冷冻商品-标准尺寸-2（≤32厘米）: {fee} 日元")
+                elif max_len_cm <= 45:
+                    fee = 860 if price_over_1000 else 784
+                    steps.append(f"7. 非冷冻商品-标准尺寸-3（≤45厘米）: {fee} 日元")
+                elif max_len_cm <= 60:
+                    fee = 994 if price_over_1000 else 914
+                    steps.append(f"7. 非冷冻商品-标准尺寸-4（≤60厘米）: {fee} 日元")
+                elif max_len_cm <= 80:
+                    fee = 896 if price_over_1000 else 801
+                    steps.append(f"7. 非冷冻商品-标准尺寸-5（≤80厘米，≤2千克）: {fee} 日元")
+            
+            # 非冷冻商品 - 大件费用
+            elif size_segment == "大件":
+                if max_len_cm <= 60:
+                    fee = 946 if price_over_1000 else 886
+                    steps.append(f"7. 非冷冻商品-大件-1（≤60厘米，≤2千克）: {fee} 日元")
+                elif max_len_cm <= 80:
+                    if weight_kg <= 2:
+                        fee = 963 if price_over_1000 else 893
+                        steps.append(f"7. 非冷冻商品-大件-2（≤80厘米，≤2千克）: {fee} 日元")
+                    elif weight_kg <= 5:
+                        fee = 1032 if price_over_1000 else 933
+                        steps.append(f"7. 非冷冻商品-大件-3（≤80厘米，≤5千克）: {fee} 日元")
+                elif max_len_cm <= 100:
+                    fee = 1052 if price_over_1000 else 944
+                    steps.append(f"7. 非冷冻商品-大件-4（≤100厘米）: {fee} 日元")
+                elif max_len_cm <= 120:
+                    if weight_kg <= 10:
+                        fee = 1285 if price_over_1000 else 1101
+                        steps.append(f"7. 非冷冻商品-大件-5（≤120厘米，≤10千克）: {fee} 日元")
+            
+            # 非冷冻商品 - 超大件费用
+            elif size_segment == "超大件":
+                if max_len_cm <= 140:
+                    fee = 1756 if price_over_1000 else 1680
+                    steps.append(f"7. 非冷冻商品-超大件-1（≤140厘米）: {fee} 日元")
+                elif max_len_cm <= 170:
+                    fee = 2675 if price_over_1000 else 2555
+                    steps.append(f"7. 非冷冻商品-超大件-2（≤170厘米）: {fee} 日元")
+                elif max_len_cm <= 200:
+                    if weight_kg <= 30:
+                        fee = 3691 if price_over_1000 else 3491
+                        steps.append(f"7. 非冷冻商品-超大件-3（≤200厘米，≤30千克）: {fee} 日元")
+                    elif weight_kg <= 40:
+                        fee = 4650 if price_over_1000 else 4450
+                        steps.append(f"7. 非冷冻商品-超大件-4（≤200厘米，≤40千克）: {fee} 日元")
+            
+            # 非冷冻商品 - 超大件（超出200厘米）
+            elif size_segment == "超大件（超出200厘米）":
+                # 根据表格，超出200厘米或超过40千克的商品需要支付尺寸费用
+                fee = 4820 if price_over_1000 else 4620
+                steps.append(f"7. 非冷冻商品-超大件（超出200厘米）: {fee} 日元")
+                steps.append("注意：超过200厘米或超过40千克的商品可能需要支付额外的尺寸费用")
+        
+        # 特殊情况处理：如果没有匹配到费用规则
+        if fee == 0:
+            # 尝试根据重量进行兜底计算
+            if is_frozen:
+                # 冷冻商品兜底计算
+                if weight_kg <= 2:
+                    fee = 984 if price_over_1000 else 898
+                    steps.append(f"7. 冷冻商品默认费用（≤2千克）: {fee} 日元")
+                elif weight_kg <= 5:
+                    fee = 1080 if price_over_1000 else 983
+                    steps.append(f"7. 冷冻商品默认费用（≤5千克）: {fee} 日元")
+                elif weight_kg <= 10:
+                    fee = 1285 if price_over_1000 else 1101
+                    steps.append(f"7. 冷冻商品默认费用（≤10千克）: {fee} 日元")
+                else:
+                    fee = 1756 if price_over_1000 else 1680
+                    steps.append(f"7. 冷冻商品默认费用（>10千克）: {fee} 日元")
+            else:
+                # 非冷冻商品兜底计算
+                if weight_kg <= 2:
+                    fee = 946 if price_over_1000 else 886
+                    steps.append(f"7. 非冷冻商品默认费用（≤2千克）: {fee} 日元")
+                elif weight_kg <= 5:
+                    fee = 1032 if price_over_1000 else 933
+                    steps.append(f"7. 非冷冻商品默认费用（≤5千克）: {fee} 日元")
+                elif weight_kg <= 10:
+                    fee = 1285 if price_over_1000 else 1101
+                    steps.append(f"7. 非冷冻商品默认费用（≤10千克）: {fee} 日元")
+                else:
+                    fee = 1756 if price_over_1000 else 1680
+                    steps.append(f"7. 非冷冻商品默认费用（>10千克）: {fee} 日元")
+        
+        # 添加最终计算结果
+        steps.append(f"8. 最终配送费: {fee} 日元")
+        
+        # 添加燃油附加费说明
+        steps.append("\n注：所有费用包含10%的燃油附加费")
+        
+        # 添加冷冻商品特殊说明
+        if is_frozen:
+            steps.append("\n冷冻商品特别说明：")
+            steps.append("- 冷冻商品需使用温控包装，可能产生额外费用")
+            steps.append("- 部分冷冻食品可能受特殊处理费影响")
+            steps.append("- 对于需要温控包装的商品，如保温时间超过96小时，可能需支付额外费用")
+        
+        # 添加注释
+        steps.append("\n注：本计算基于2025年最新的亚马逊日本站FBA配送费标准（6.1日本站FBA费用计算模块）")
+        
+        # 添加特殊说明
+        steps.append("\n特别说明：")
+        steps.append("- 对于危险商品和需要特殊处理的商品，可能适用不同的费用标准")
+        steps.append("- 超过200厘米或超过40千克的商品可能需要支付额外的尺寸费用")
+        steps.append("- 实际费用可能因亚马逊政策调整而变化，请以亚马逊官网为准")
+        steps.append("- 冷冻商品可能产生额外的温控包装和处理费用")
+        
+        return fee, "\n".join(steps)
     
     def determine_size_segment(self, max_len, mid_len, min_len, len_girth, weight_lb, weight_oz):
         # 超大件判断

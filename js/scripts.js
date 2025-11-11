@@ -71,9 +71,9 @@ function checkVersionInfo() {
     // 这里可以通过AJAX请求获取最新版本信息
     // 使用正确的版本数据
     const versionInfo = {
-        latestVersion: '1.2.2',
+        latestVersion: '1.2.4',
         releaseDate: '2025-11-01',
-        description: '修复了批量处理中的错误，移除了对不存在变量的引用，修正了异常处理结构，优化了代码稳定性，提高了程序运行效率'
+        description: '全新界面设计，提升用户体验，优化了FBA费用计算逻辑，提高准确性，修复了已知问题，增强程序稳定性，支持更多亚马逊站点的费用计算'
     };
     
     // 更新页面上的版本信息

@@ -13,8 +13,8 @@
         <p>专业的Amazon FBA费用计算工具</p>
         
         <div class="version-info">
-            <p><strong>当前版本：</strong>1.2.3</p>
-            <p><strong>更新日期：</strong>2024-11-01</p>
+            <p><strong>当前版本：</strong>1.2.4</p>
+            <p><strong>更新日期：</strong>2025-11-01</p>
             <p><strong>开发团队：</strong>Jerry Tom</p>
         </div>
         
@@ -25,11 +25,31 @@
         </div>
         
         <h2>立即更新</h2>
+        <div class="site-selector">
+            <label for="amazon-site">选择亚马逊站点：</label>
+            <select id="amazon-site">
+                <option value="us">美国站 (US)</option>
+                <option value="jp">日本站 (JP)</option>
+            </select>
+        </div>
         <div class="action-buttons">
-            <a href="downloads/FBA费用计算器安装程序.exe" class="btn download-btn" data-version="1.2.4">下载安装程序</a>
+            <a href="downloads/FBA费用计算器_美国站.exe" id="download-link" class="btn download-btn" data-version="1.2.4">下载安装程序 - 美国站</a>
             <a href="update_info.json" class="btn">查看更新信息</a>
             <a href="history.html" class="btn">版本历史</a>
         </div>
+        <script>
+            // 站点选择逻辑
+            document.getElementById('amazon-site').addEventListener('change', function() {
+                const downloadLink = document.getElementById('download-link');
+                if (this.value === 'us') {
+                    downloadLink.href = 'downloads/FBA费用计算器_美国站.exe';
+                    downloadLink.textContent = '下载安装程序 - 美国站';
+                } else if (this.value === 'jp') {
+                    downloadLink.href = 'downloads/FBA费用计算器_日本站.exe';
+                    downloadLink.textContent = '下载安装程序 - 日本站';
+                }
+            });
+        </script>
         <div class="installation-guide">
             <h3>安装指南</h3>
             <p>下载完成后，请按照以下步骤操作：</p>
