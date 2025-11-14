@@ -9,8 +9,19 @@ sys.path.append('.')
 block_cipher = None
 
 # 查找Python DLL路径
-python_dll_path = os.path.join(os.path.dirname(sys.executable), "python3.dll")
-python311_dll_path = os.path.join(os.path.dirname(sys.executable), "python311.dll")
+python_dir = os.path.dirname(sys.executable)
+python_dll_path = os.path.join(python_dir, "python3.dll")
+python311_dll_path = os.path.join(python_dir, "python311.dll")
+
+# 添加所有必要的Python DLL文件
+dll_files = [
+    "python3.dll",
+    "python311.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
+    "msvcp140.dll",
+    "ucrtbase.dll"
+]
 
 datas = [
     ('downloads/FBA费用计算器_美国站.exe', 'downloads'),
@@ -21,6 +32,12 @@ datas = [
 
 binaries = []
 # 添加Python DLL文件
+for dll in dll_files:
+    dll_path = os.path.join(python_dir, dll)
+    if os.path.exists(dll_path):
+        binaries.append((dll_path, '.'))
+
+# 确保关键的Python DLL文件被包含
 if os.path.exists(python_dll_path):
     binaries.append((python_dll_path, '.'))
 if os.path.exists(python311_dll_path):
@@ -51,8 +68,8 @@ exe = EXE(pyz,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          upx_exclude=[],
-          runtime_tmpdir=None,
+          upx_exclude=['vcruntime140.dll', 'vcruntime140_1.dll', 'msvcp140.dll', 'ucrtbase.dll'],
+          runtime_tmpdir=os.path.abspath('.'),
           console=False,
           disable_windowed_traceback=False,
           target_arch=None,

@@ -12,6 +12,7 @@ FBA费用计算器安装程序
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
+import tkinter.font as tkfont
 import os
 import sys
 import shutil
@@ -600,7 +601,7 @@ def main():
     
     # 设置中文字体
     if sys.platform == 'win32':
-        default_font = tk.font.nametofont("TkDefaultFont")
+        default_font = tkfont.nametofont("TkDefaultFont")
         default_font.configure(family="SimHei", size=10)
         root.option_add("*Font", default_font)
     
