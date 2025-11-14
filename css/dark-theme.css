@@ -1,0 +1,775 @@
+/* 全局样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    background-color: #0a0a0a;
+    color: #e0e0e0;
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* 容器样式 */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* 导航栏样式 */
+.navbar {
+    background-color: #111;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+}
+
+.logo h2 {
+    color: #00bcd4;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+}
+
+.nav-links li {
+    margin-left: 30px;
+}
+
+.nav-links a {
+    color: #e0e0e0;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: #00bcd4;
+}
+
+.mobile-menu {
+    display: none;
+}
+
+/* 英雄区域样式 */
+.hero {
+    background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 100px 0 50px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(0, 188, 212, 0.1) 0%, transparent 70%);
+    z-index: 0;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.hero h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 20px;
+    background: linear-gradient(45deg, #00bcd4, #2196f3);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero .subtitle {
+    font-size: 1.5rem;
+    color: #00bcd4;
+    margin-bottom: 30px;
+    font-weight: 600;
+}
+
+.hero .description {
+    font-size: 1.2rem;
+    color: #b0b0b0;
+    margin-bottom: 40px;
+    line-height: 1.8;
+}
+
+.hero-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.version-badge {
+    display: inline-block;
+    background-color: #1a1a1a;
+    color: #00bcd4;
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    border: 1px solid rgba(0, 188, 212, 0.3);
+}
+
+/* 按钮样式 */
+.btn {
+    display: inline-block;
+    padding: 12px 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.primary-btn {
+    background: linear-gradient(45deg, #00bcd4, #2196f3);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+}
+
+.primary-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.4);
+}
+
+.secondary-btn {
+    background-color: transparent;
+    color: #00bcd4;
+    border: 2px solid #00bcd4;
+}
+
+.secondary-btn:hover {
+    background-color: rgba(0, 188, 212, 0.1);
+    transform: translateY(-3px);
+}
+
+/* 核心功能样式 */
+.features {
+    background-color: #111;
+    padding: 100px 0;
+}
+
+.features h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 80px;
+    color: #fff;
+    position: relative;
+}
+
+.features h2::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background: linear-gradient(90deg, #00bcd4, #2196f3);
+    border-radius: 2px;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+}
+
+.feature-item {
+    background-color: #1a1a1a;
+    padding: 40px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.feature-item:hover {
+    transform: translateY(-10px);
+    border-color: rgba(0, 188, 212, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 188, 212, 0.1);
+}
+
+.feature-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: #00bcd4;
+}
+
+.feature-item h3 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #fff;
+}
+
+.feature-item p {
+    color: #b0b0b0;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* 产品优势样式 */
+.benefits {
+    background-color: #0a0a0a;
+    padding: 100px 0;
+}
+
+.benefits h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 80px;
+    color: #fff;
+    position: relative;
+}
+
+.benefits h2::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background: linear-gradient(90deg, #00bcd4, #2196f3);
+    border-radius: 2px;
+}
+
+.benefits-content {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px;
+}
+
+.benefit-item {
+    background-color: #111;
+    padding: 40px;
+    border-radius: 15px;
+    border-left: 4px solid #00bcd4;
+    transition: all 0.3s ease;
+}
+
+.benefit-item:hover {
+    transform: translateX(10px);
+    box-shadow: 0 5px 20px rgba(0, 188, 212, 0.1);
+}
+
+.benefit-item h3 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #00bcd4;
+}
+
+.benefit-item p {
+    color: #b0b0b0;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* 界面展示样式 */
+.screenshots {
+    background-color: #111;
+    padding: 100px 0;
+}
+
+.screenshots h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 80px;
+    color: #fff;
+    position: relative;
+}
+
+.screenshots h2::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background: linear-gradient(90deg, #00bcd4, #2196f3);
+    border-radius: 2px;
+}
+
+.screenshot-gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+}
+
+.screenshot-item {
+    text-align: center;
+}
+
+.screenshot-placeholder {
+    background-color: #1a1a1a;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    color: #00bcd4;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.screenshot-placeholder:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 188, 212, 0.1);
+}
+
+.screenshot-item p {
+    color: #b0b0b0;
+    font-size: 1rem;
+}
+
+/* 价格方案样式 */
+.pricing {
+    background-color: #0a0a0a;
+    padding: 100px 0;
+}
+
+.pricing h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 80px;
+    color: #fff;
+    position: relative;
+}
+
+.pricing h2::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background: linear-gradient(90deg, #00bcd4, #2196f3);
+    border-radius: 2px;
+}
+
+.pricing-cards {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.pricing-card {
+    background-color: #111;
+    padding: 40px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    width: 350px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.pricing-card:hover {
+    transform: translateY(-10px);
+    border-color: rgba(0, 188, 212, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 188, 212, 0.1);
+}
+
+.pricing-card.featured {
+    border-color: #00bcd4;
+    background-color: #151515;
+}
+
+.featured-badge {
+    position: absolute;
+    top: 20px;
+    right: -50px;
+    background-color: #00bcd4;
+    color: white;
+    padding: 5px 50px;
+    transform: rotate(45deg);
+    font-size: 0.8rem;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.pricing-card h3 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.pricing-card .price {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #00bcd4;
+    margin-bottom: 10px;
+}
+
+.pricing-card .price-description {
+    color: #b0b0b0;
+    margin-bottom: 30px;
+}
+
+.pricing-features {
+    text-align: left;
+    margin-bottom: 40px;
+    list-style: none;
+}
+
+.pricing-features li {
+    margin-bottom: 15px;
+    color: #e0e0e0;
+    position: relative;
+    padding-left: 25px;
+}
+
+.pricing-features li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #00bcd4;
+    font-weight: bold;
+}
+
+/* 下载区域样式 */
+.download {
+    background: linear-gradient(135deg, #111, #0a0a0a);
+    padding: 100px 0;
+    text-align: center;
+}
+
+.download h2 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.download p {
+    font-size: 1.2rem;
+    color: #b0b0b0;
+    margin-bottom: 60px;
+}
+
+.download-options {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-bottom: 60px;
+}
+
+.download-option {
+    background-color: #1a1a1a;
+    padding: 30px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    width: 300px;
+    transition: all 0.3s ease;
+}
+
+.download-option:hover {
+    transform: translateY(-5px);
+    border-color: rgba(0, 188, 212, 0.3);
+    box-shadow: 0 5px 20px rgba(0, 188, 212, 0.1);
+}
+
+.download-option h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: #00bcd4;
+}
+
+.download-option p {
+    font-size: 1rem;
+    margin-bottom: 20px;
+}
+
+.download-btn {
+    width: 100%;
+    background: linear-gradient(45deg, #00bcd4, #2196f3);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.download-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.4);
+}
+
+.version-info {
+    background-color: #0a0a0a;
+    display: inline-block;
+    padding: 20px 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.version-info p {
+    margin-bottom: 10px;
+    font-size: 1rem;
+}
+
+.version-info p:last-child {
+    margin-bottom: 0;
+}
+
+/* 页脚样式 */
+footer {
+    background-color: #0a0a0a;
+    padding: 60px 0 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+    margin-bottom: 40px;
+}
+
+.footer-info h3 {
+    font-size: 1.8rem;
+    color: #00bcd4;
+    margin-bottom: 20px;
+}
+
+.footer-info p {
+    color: #b0b0b0;
+    line-height: 1.6;
+}
+
+.footer-links h4,
+.footer-contact h4 {
+    font-size: 1.2rem;
+    color: #fff;
+    margin-bottom: 20px;
+}
+
+.footer-links ul {
+    list-style: none;
+}
+
+.footer-links li {
+    margin-bottom: 15px;
+}
+
+.footer-links a {
+    color: #b0b0b0;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: #00bcd4;
+}
+
+.footer-contact p {
+    color: #b0b0b0;
+    margin-bottom: 15px;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.footer-bottom p {
+    color: #707070;
+    font-size: 0.9rem;
+}
+
+/* 返回顶部按钮 */
+.back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background-color: #00bcd4;
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    z-index: 999;
+}
+
+.back-to-top.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.back-to-top:hover {
+    transform: translateY(-5px);
+    background-color: #2196f3;
+}
+
+/* 响应式设计 */
+@media (max-width: 992px) {
+    .feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .benefits-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .screenshot-gallery {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar .container {
+        padding: 15px;
+    }
+    
+    .nav-links {
+        position: fixed;
+        top: 70px;
+        left: -100%;
+        flex-direction: column;
+        background-color: #111;
+        width: 100%;
+        text-align: center;
+        transition: 0.3s;
+        box-shadow: 0 10px 27px rgba(0, 0, 0, 0.05);
+        z-index: 1000;
+    }
+    
+    .nav-links.active {
+        left: 0;
+    }
+    
+    .nav-links li {
+        margin: 25px 0;
+    }
+    
+    .mobile-menu {
+        display: block;
+    }
+    
+    #menu-toggle {
+        background: none;
+        border: none;
+        color: #e0e0e0;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+    
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero .subtitle {
+        font-size: 1.2rem;
+    }
+    
+    .hero .description {
+        font-size: 1rem;
+    }
+    
+    .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .screenshot-gallery {
+        grid-template-columns: 1fr;
+    }
+    
+    .pricing-cards {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .download-options {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+    
+    .features h2,
+    .benefits h2,
+    .screenshots h2,
+    .pricing h2,
+    .download h2 {
+        font-size: 2rem;
+    }
+    
+    .feature-item,
+    .benefit-item,
+    .download-option {
+        padding: 25px;
+    }
+    
+    .back-to-top {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+        bottom: 20px;
+        right: 20px;
+    }
+}

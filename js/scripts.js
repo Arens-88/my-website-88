@@ -2,12 +2,32 @@
 
 // 页面加载完成后执行
 window.addEventListener('DOMContentLoaded', function() {
+    // 检测当前页面
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    
     // 初始化页面功能
     initPage();
     
     // 添加页面进入动画
     animatePageElements();
+    
+    // 如果是首页，添加首页特定功能
+    if (currentPage === 'home.html') {
+        initHomePage();
+    }
 });
+
+// 首页特定初始化函数
+function initHomePage() {
+    // 导航菜单切换
+    setupMenuToggle();
+    
+    // 设置导航高亮
+    setupActiveNavigation();
+    
+    // 添加首页特有的滚动动画
+    setupHomeScrollAnimations();
+}
 
 // 初始化页面函数
 function initPage() {
@@ -292,4 +312,79 @@ window.addEventListener('resize', function() {
             btn.style.margin = '10px 0';
         });
     }
+    
+    // 重置导航菜单
+    const navLinks = document.querySelector('.nav-links');
+    if (navLinks && navLinks.classList.contains('active')) {
+        navLinks.classList.remove('active');
+    }
 });
+
+// 导航菜单切换功能
+function setupMenuToggle() {
+    const menuToggle = document.getElementById('menu-toggle');
+    if (menuToggle) {
+        menuToggle.addEventListener('click', function() {
+            const navLinks = document.querySelector('.nav-links');
+            if (navLinks) {
+                navLinks.classList.toggle('active');
+            }
+        });
+    }
+}
+
+// 导航高亮功能
+function setupActiveNavigation() {
+    const sections = document.querySelectorAll('section');
+    const navLinks = document.querySelectorAll('.nav-links a');
+    
+    if (sections.length > 0 && navLinks.length > 0) {
+        window.addEventListener('scroll', function() {
+            let current = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.style.color = '';
+                link.style.borderBottom = '';
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.style.color = '#00bcd4';
+                    link.style.borderBottom = '2px solid #00bcd4';
+                }
+            });
+        });
+    }
+}
+
+// 首页特有的滚动动画
+function setupHomeScrollAnimations() {
+    const animateElements = document.querySelectorAll('.feature-item, .benefit-item, .screenshot-item, .pricing-card, .download-option');
+    
+    if (animateElements.length > 0 && 'IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = 1;
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+        
+        animateElements.forEach(element => {
+            // 初始样式
+            element.style.opacity = 0;
+            element.style.transform = 'translateY(20px)';
+            element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            
+            observer.observe(element);
+        });
+    }
+}

@@ -44,11 +44,14 @@ class FBAInstaller:
         self.center_window()
         
         # 安装程序版本
-        self.installer_version = "1.0.0"
+        self.installer_version = "1.3.4"
         
         # 默认安装路径
         self.default_install_path = os.path.join(os.environ["ProgramFiles"], "FBA费用计算器")
         self.install_path = tk.StringVar(value=self.default_install_path)
+        
+        # 站点选择
+        self.selected_site = tk.StringVar(value="us")  # us或jp
         
         # 进度条变量
         self.progress_var = tk.DoubleVar(value=0)
@@ -56,13 +59,12 @@ class FBAInstaller:
         # 安装状态
         self.install_status = tk.StringVar(value="准备安装...")
         
-        # 需要安装的文件列表
+        # 需要安装的文件列表 - 支持1.3.4版本
         self.files_to_install = [
-            {"source": "dist/FBA费用计算器.exe", "target": "FBA费用计算器.exe"},
-            {"source": "fba_calculator.log", "target": "fba_calculator.log"},
-            {"source": "update_info.json", "target": "update_info.json"},
-            {"source": "downloads/FBA费用计算器.exe", "target": "downloads/FBA费用计算器.exe"},
-            {"source": "快速使用指南.txt", "target": "快速使用指南.txt"}
+            {"source": "downloads/FBA费用计算器_美国站.exe", "target": "FBA费用计算器_美国站.exe"},
+            {"source": "downloads/FBA费用计算器_日本站.exe", "target": "FBA费用计算器_日本站.exe"},
+            {"source": "downloads/update_info.json", "target": "update_info.json"},
+            {"source": "version.json", "target": "version.json"}
         ]
         
         # 创建界面
@@ -163,6 +165,20 @@ class FBAInstaller:
                                  command=self.browse_install_path)
         browse_button.pack(side=tk.RIGHT, padx=5)
         
+        # 站点选择
+        site_frame = ttk.Frame(content_frame)
+        site_frame.pack(anchor=tk.W, pady=10)
+        
+        ttk.Label(site_frame, text="选择版本:").pack(side=tk.LEFT, padx=5)
+        
+        us_radio = ttk.Radiobutton(site_frame, text="美国站", value="us", 
+                                 variable=self.selected_site)
+        us_radio.pack(side=tk.LEFT, padx=5)
+        
+        jp_radio = ttk.Radiobutton(site_frame, text="日本站", value="jp", 
+                                 variable=self.selected_site)
+        jp_radio.pack(side=tk.LEFT, padx=5)
+        
         # 创建开始菜单快捷方式选项
         self.create_shortcut_var = tk.BooleanVar(value=True)
         shortcut_checkbox = ttk.Checkbutton(content_frame, 
@@ -257,15 +273,17 @@ class FBAInstaller:
         content_frame.pack(padx=50, fill=tk.BOTH, expand=True)
         
         # 显示完成信息
+        site_name = "美国站" if self.selected_site.get() == "us" else "日本站"
+        exe_name = "FBA费用计算器_美国站.exe" if self.selected_site.get() == "us" else "FBA费用计算器_日本站.exe"
+        
         complete_text = (
-            "FBA费用计算器已成功安装到您的电脑上。\n\n"
+            f"FBA费用计算器-{site_name}已成功安装到您的电脑上。\n\n"
             f"安装位置: {self.install_path.get()}\n"
             f"桌面快捷方式: {'已创建' if self.create_shortcut_var.get() else '未创建'}\n"
             f"防火墙规则: {'已添加' if self.add_firewall_var.get() else '未添加'}\n\n"
             "您现在可以通过以下方式启动程序：\n"
-            "• 双击桌面上的快捷方式\n"
-            "• 从开始菜单中启动\n"
-            "• 直接运行安装目录中的可执行文件"
+            f"• 双击桌面上的快捷方式：FBA费用计算器_{site_name}.lnk\n"
+            f"• 直接运行安装目录中的可执行文件：{exe_name}"
         )
         
         complete_label = ttk.Label(content_frame, text=complete_text, 
@@ -434,16 +452,26 @@ class FBAInstaller:
             from win32com.client import Dispatch
             
             desktop = winshell.desktop()
-            shortcut_path = os.path.join(desktop, "FBA费用计算器.lnk")
             
-            target_path = os.path.join(self.install_path.get(), "FBA费用计算器.exe")
+            # 根据站点选择创建对应的快捷方式
+            if self.selected_site.get() == "us":
+                shortcut_name = "FBA费用计算器_美国站.lnk"
+                exe_name = "FBA费用计算器_美国站.exe"
+                description = "FBA费用计算器 - 美国站版本"
+            else:
+                shortcut_name = "FBA费用计算器_日本站.lnk"
+                exe_name = "FBA费用计算器_日本站.exe"
+                description = "FBA费用计算器 - 日本站版本"
+            
+            shortcut_path = os.path.join(desktop, shortcut_name)
+            target_path = os.path.join(self.install_path.get(), exe_name)
             working_dir = self.install_path.get()
             
             shell = Dispatch('WScript.Shell')
             shortcut = shell.CreateShortCut(shortcut_path)
             shortcut.Targetpath = target_path
             shortcut.WorkingDirectory = working_dir
-            shortcut.Description = "FBA费用计算器 - 亚马逊FBA配送费用计算工具"
+            shortcut.Description = description
             shortcut.IconLocation = target_path
             shortcut.Save()
             
@@ -453,8 +481,10 @@ class FBAInstaller:
             self.log_message(f"创建桌面快捷方式失败: {str(e)}")
             # 尝试使用备用方法
             try:
-                shortcut_content = f"@echo off\nstart \"\" \"{os.path.join(self.install_path.get(), 'FBA费用计算器.exe')}\""
-                bat_path = os.path.join(winshell.desktop(), "运行FBA费用计算器.bat")
+                exe_name = "FBA费用计算器_美国站.exe" if self.selected_site.get() == "us" else "FBA费用计算器_日本站.exe"
+                shortcut_content = f"@echo off\nstart \"\" \"{os.path.join(self.install_path.get(), exe_name)}\""
+                bat_name = "运行FBA费用计算器_美国站.bat" if self.selected_site.get() == "us" else "运行FBA费用计算器_日本站.bat"
+                bat_path = os.path.join(winshell.desktop(), bat_name)
                 with open(bat_path, 'w', encoding='utf-8') as f:
                     f.write(shortcut_content)
                 self.log_message(f"创建备用启动脚本: {bat_path}")
@@ -547,7 +577,8 @@ class FBAInstaller:
         # 如果选择运行程序
         if self.run_program_var.get():
             try:
-                exe_path = os.path.join(self.install_path.get(), "FBA费用计算器.exe")
+                exe_name = "FBA费用计算器_美国站.exe" if self.selected_site.get() == "us" else "FBA费用计算器_日本站.exe"
+                exe_path = os.path.join(self.install_path.get(), exe_name)
                 subprocess.Popen(exe_path)
             except Exception as e:
                 messagebox.showwarning("启动失败", f"无法启动FBA费用计算器: {str(e)}")
