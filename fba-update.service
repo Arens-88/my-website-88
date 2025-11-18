@@ -1,0 +1,36 @@
+[Unit]
+Description=FBA费用计算器更新服务器
+After=network.target
+Wants=network.target
+
+[Service]
+# 使用www-data用户运行，增强安全性
+User=www-data
+Group=www-data
+
+# 设置工作目录
+WorkingDirectory=/var/www/fba
+
+# 启动命令 - 使用我们的Python脚本
+ExecStart=/usr/bin/python3 /var/www/fba/start_update_server.py
+
+# 重启策略
+Restart=always
+RestartSec=10
+
+# 安全增强设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+# 资源限制
+LimitNOFILE=4096
+
+# 日志配置
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=fba-update-server
+
+[Install]
+WantedBy=multi-user.target

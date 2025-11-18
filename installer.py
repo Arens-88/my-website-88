@@ -599,11 +599,16 @@ def main():
     # 创建主窗口
     root = tk.Tk()
     
-    # 设置中文字体
+    # 设置中文字体 - 添加异常处理
     if sys.platform == 'win32':
-        default_font = tkfont.nametofont("TkDefaultFont")
-        default_font.configure(family="SimHei", size=10)
-        root.option_add("*Font", default_font)
+        try:
+            # 尝试设置中文字体
+            default_font = tkfont.nametofont("TkDefaultFont")
+            default_font.configure(family="SimHei", size=10)
+            root.option_add("*Font", default_font)
+        except Exception as e:
+            # 如果字体设置失败，继续运行程序（不影响核心功能）
+            print(f"警告: 无法设置中文字体: {str(e)}")
     
     # 创建安装程序实例
     installer = FBAInstaller(root)

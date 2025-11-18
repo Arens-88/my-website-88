@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品中心 - FBA费用计算器</title>
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <style>
+        /* 产品页面特有样式 */
+        .products-hero {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+        
+        .products-hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .products-hero p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            opacity: 0.9;
+        }
+        
+        .products-section {
+            padding: 60px 0;
+        }
+        
+        .products-section:nth-child(even) {
+            background-color: #1a1a1a;
+        }
+        
+        .product-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .product-card {
+            background-color: #2c2c2c;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+        }
+        
+        .product-image {
+            height: 200px;
+            background: linear-gradient(45deg, #3a86ff, #8338ec);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 4rem;
+        }
+        
+        .product-content {
+            padding: 25px;
+        }
+        
+        .product-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+        
+        .product-description {
+            color: #b0b0b0;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .product-features {
+            margin-bottom: 25px;
+        }
+        
+        .product-features li {
+            margin-bottom: 8px;
+            color: #d0d0d0;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .product-features li:before {
+            content: "✓";
+            color: #4CAF50;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid #0066cc;
+            color: #0066cc;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .btn-outline:hover {
+            background-color: #0066cc;
+            color: white;
+        }
+        
+        .config-panel {
+            background-color: #2c2c2c;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 40px;
+        }
+        
+        .config-form {
+            display: grid;
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 8px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+        
+        .download-section {
+            text-align: center;
+            margin-top: 40px;
+            padding: 40px;
+            background-color: #1e3c72;
+            border-radius: 12px;
+        }
+        
+        .download-section h3 {
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .download-section p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 30px;
+        }
+        
+        .guide-link {
+            display: inline-block;
+            margin-top: 15px;
+            color: #0066cc;
+            text-decoration: underline;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+        
+        .guide-link:hover {
+            color: #0080ff;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <h2>FBA费用计算器</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="home.html">首页</a></li>
+                <li><a href="home.html#features">核心功能</a></li>
+                <li><a href="home.html#benefits">产品优势</a></li>
+                <li><a href="products.html">产品</a></li>
+                <li><a href="home.html#screenshots">界面展示</a></li>
+                <li><a href="home.html#pricing">价格方案</a></li>
+                <li><a href="home.html#download">立即下载</a></li>
+            </ul>
+            <div class="mobile-menu">
+                <button id="menu-toggle">☰</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区域 -->
+    <section class="products-hero">
+        <div class="container">
+            <h1>我们的产品</h1>
+            <p>专业的亚马逊运营工具集，助力您的跨境电商业务蓬勃发展。一站式解决FBA费用计算、数据整合、报表生成等运营痛点。</p>
+        </div>
+    </section>
+
+    <!-- 亚马逊多平台数据整合报表工具 -->
+    <section class="products-section">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 20px;">亚马逊多平台数据整合报表工具</h2>
+            <p style="text-align: center; color: #b0b0b0; max-width: 800px; margin: 0 auto 40px;">自动化数据抓取、智能整合分析、可视化报表生成，彻底告别手动Excel汇总，提升运营效率80%。</p>
+            
+            <div class="product-cards">
+                <div class="product-card">
+                    <div class="product-image">📊</div>
+                    <div class="product-content">
+                        <h3 class="product-title">数据自动抓取</h3>
+                        <p class="product-description">自动从亚马逊SP-API获取销售、订单、广告、库存等核心数据，支持多店铺多平台管理。</p>
+                        <ul class="product-features">
+                            <li>销售/订单数据自动抓取</li>
+                            <li>广告数据多维度分析</li>
+                            <li>库存实时监控预警</li>
+                            <li>API调用失败自动重试</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="product-card">
+                    <div class="product-image">🔄</div>
+                    <div class="product-content">
+                        <h3 class="product-title">智能数据整合</h3>
+                        <p class="product-description">按ASIN和日期智能合并多源数据，自动清洗异常值，计算关键业务指标。</p>
+                        <ul class="product-features">
+                            <li>自动化数据清洗整合</li>
+                            <li>ERP成本数据无缝对接</li>
+                            <li>净利润、利润率自动计算</li>
+                            <li>异常值智能检测标记</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="product-card">
+                    <div class="product-image">📈</div>
+                    <div class="product-content">
+                        <h3 class="product-title">可视化报表中心</h3>
+                        <p class="product-description">ASIN利润报表、销量趋势、库存健康等多维度分析，直观展示业务状况。</p>
+                        <ul class="product-features">
+                            <li>多维度数据报表</li>
+                            <li>交互式数据可视化</li>
+                            <li>异常波动自动标注</li>
+                            <li>报表导出与共享</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="product-card">
+                    <div class="product-image">⏰</div>
+                    <div class="product-content">
+                        <h3 class="product-title">智能推送系统</h3>
+                        <p class="product-description">定时推送关键业务数据，支持企业微信和邮件多渠道触达。</p>
+                        <ul class="product-features">
+                            <li>每日运营数据推送</li>
+                            <li>企业微信机器人对接</li>
+                            <li>邮件报表自动发送</li>
+                            <li>自定义推送内容</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 配置面板 -->
+            <div class="config-panel">
+                <h3 style="text-align: center; margin-bottom: 30px;">在线配置</h3>
+                <p style="text-align: center; color: #b0b0b0; margin-bottom: 30px;">完成以下配置后，下载的应用程序将自动同步这些设置</p>
+                
+                <form id="config-form" class="config-form">
+                    <div class="form-group">
+                        <label for="api_key">亚马逊SP-API Key</label>
+                        <input type="text" id="api_key" placeholder="请输入您的SP-API Key" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="api_secret">亚马逊SP-API Secret</label>
+                        <input type="password" id="api_secret" placeholder="请输入您的SP-API Secret" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="region">选择区域</label>
+                        <select id="region" required>
+                            <option value="">请选择区域</option>
+                            <option value="us">美国站</option>
+                            <option value="jp">日本站</option>
+                            <option value="eu">欧洲站</option>
+                            <option value="all">全部站点</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sync_time">自动同步时间</label>
+                        <select id="sync_time">
+                            <option value="02:00">凌晨 2:00</option>
+                            <option value="06:00">早上 6:00</option>
+                            <option value="08:00">早上 8:00</option>
+                            <option value="12:00">中午 12:00</option>
+                            <option value="18:00">晚上 6:00</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="notification">推送方式</label>
+                        <select id="notification">
+                            <option value="">不推送</option>
+                            <option value="wechat">企业微信</option>
+                            <option value="email">邮件</option>
+                            <option value="both">两者都要</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">接收邮箱</label>
+                        <input type="email" id="email" placeholder="请输入接收报表的邮箱">
+                    </div>
+                    <div class="form-group">
+                        <label for="remarks">备注信息</label>
+                        <textarea id="remarks" rows="3" placeholder="可选：添加您的备注信息"></textarea>
+                    </div>
+                    <div style="text-align: center;">
+                        <button type="button" id="save-config" class="btn primary-btn">保存配置</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- 下载区域 -->
+            <div class="download-section">
+        <h3>准备就绪，立即下载</h3>
+        <p>配置已保存，点击下方按钮下载应用程序。安装后使用您的账号登录即可同步已保存的配置。</p>
+        <a href="downloads/amazon-report-tool-setup.exe" class="btn download-btn">下载亚马逊多平台数据整合报表工具</a>
+        <a href="sync_guide.html" style="display: block; margin-top: 15px; text-decoration: underline; color: #0066cc;">查看配置同步指南</a>
+    </div>
+        </div>
+    </section>
+
+    <!-- FBA费用计算器 -->
+    <section class="products-section">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 20px;">FBA费用计算器</h2>
+            <p style="text-align: center; color: #b0b0b0; max-width: 800px; margin: 0 auto 40px;">专业的Amazon FBA费用计算工具，精确计算FBA仓储费、配送费、佣金等各项费用，优化您的产品定价策略。</p>
+            
+            <div class="product-cards">
+                <div class="product-card">
+                    <div class="product-image">💰</div>
+                    <div class="product-content">
+                        <h3 class="product-title">精确计算</h3>
+                        <p class="product-description">根据Amazon最新费率表，精确计算FBA仓储费、配送费、佣金等各项费用。</p>
+                        <ul class="product-features">
+                            <li>最新费率表自动更新</li>
+                            <li>多维度费用明细</li>
+                            <li>盈利平衡点分析</li>
+                            <li>历史费率对比</li>
+                        </ul>
+                        <div class="product-actions">
+                            <a href="downloads/FBA费用计算器_美国站.exe" class="btn primary-btn">美国站版本</a>
+                            <a href="home.html" class="btn-outline">了解更多</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="product-card">
+                    <div class="product-image">🌐</div>
+                    <div class="product-content">
+                        <h3 class="product-title">多站点支持</h3>
+                        <p class="product-description">同时支持美国站和日本站的FBA费用计算，满足您的跨境电商需求。</p>
+                        <ul class="product-features">
+                            <li>美国站完整支持</li>
+                            <li>日本站完整支持</li>
+                            <li>多币种转换</li>
+                            <li>汇率实时更新</li>
+                        </ul>
+                        <div class="product-actions">
+                            <a href="downloads/FBA费用计算器_日本站.exe" class="btn primary-btn">日本站版本</a>
+                            <a href="home.html" class="btn-outline">了解更多</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="product-card">
+                    <div class="product-image">📋</div>
+                    <div class="product-content">
+                        <h3 class="product-title">批量处理</h3>
+                        <p class="product-description">支持批量导入产品信息进行费用计算，高效处理大量SKU。</p>
+                        <ul class="product-features">
+                            <li>Excel批量导入</li>
+                            <li>CSV格式支持</li>
+                            <li>批量导出结果</li>
+                            <li>模板自动生成</li>
+                        </ul>
+                        <div class="product-actions">
+                            <a href="downloads/FBA费用计算器安装程序.exe" class="btn primary-btn">完整安装程序</a>
+                            <a href="home.html" class="btn-outline">了解更多</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <h3>FBA费用计算器</h3>
+                    <p>专业的Amazon FBA费用计算工具，助力您的跨境电商业务蓬勃发展</p>
+                </div>
+                <div class="footer-links">
+                    <h4>快速链接</h4>
+                    <ul>
+                        <li><a href="home.html">首页</a></li>
+                        <li><a href="products.html">产品</a></li>
+                        <li><a href="home.html#features">核心功能</a></li>
+                        <li><a href="home.html#pricing">价格方案</a></li>
+                        <li><a href="home.html#download">立即下载</a></li>
+                        <li><a href="history.html">版本历史</a></li>
+                    </ul>
+                </div>
+                <div class="footer-contact">
+                    <h4>联系我们</h4>
+                    <p>邮箱: support@fba-calculator.com</p>
+                    <p>微信: FBACalculator</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023-2025 FBA费用计算器 版权所有</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 返回顶部按钮 -->
+    <button id="back-to-top" class="back-to-top">↑</button>
+
+    <script>
+        // 导航菜单切换
+        document.getElementById('menu-toggle').addEventListener('click', function() {
+            const navLinks = document.querySelector('.nav-links');
+            navLinks.classList.toggle('active');
+        });
+
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                    // 关闭移动端菜单
+                    document.querySelector('.nav-links').classList.remove('active');
+                }
+            });
+        });
+
+        // 返回顶部按钮
+        const backToTopBtn = document.getElementById('back-to-top');
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backToTopBtn.classList.add('active');
+            } else {
+                backToTopBtn.classList.remove('active');
+            }
+        });
+
+        backToTopBtn.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // 配置保存功能
+        document.getElementById('save-config').addEventListener('click', function() {
+            // 收集表单数据
+            const config = {
+                api_key: document.getElementById('api_key').value,
+                api_secret: document.getElementById('api_secret').value,
+                region: document.getElementById('region').value,
+                sync_time: document.getElementById('sync_time').value,
+                notification: document.getElementById('notification').value,
+                email: document.getElementById('email').value,
+                remarks: document.getElementById('remarks').value,
+                saved_at: new Date().toISOString()
+            };
+
+            // 简单的表单验证
+            if (!config.api_key || !config.api_secret || !config.region) {
+                alert('请填写必填项：API Key、API Secret 和 区域');
+                return;
+            }
+
+            // 保存配置到localStorage
+            localStorage.setItem('amazon_report_tool_config', JSON.stringify(config));
+            
+            // 显示保存成功提示
+            alert('配置保存成功！下载应用程序后，使用您的账号登录即可同步这些设置。');
+        });
+
+        // 尝试恢复之前保存的配置
+        window.addEventListener('load', function() {
+            const savedConfig = localStorage.getItem('amazon_report_tool_config');
+            if (savedConfig) {
+                try {
+                    const config = JSON.parse(savedConfig);
+                    document.getElementById('api_key').value = config.api_key || '';
+                    document.getElementById('api_secret').value = config.api_secret || '';
+                    document.getElementById('region').value = config.region || '';
+                    document.getElementById('sync_time').value = config.sync_time || '02:00';
+                    document.getElementById('notification').value = config.notification || '';
+                    document.getElementById('email').value = config.email || '';
+                    document.getElementById('remarks').value = config.remarks || '';
+                } catch (e) {
+                    console.error('加载配置失败:', e);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

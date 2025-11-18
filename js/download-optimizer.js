@@ -2,8 +2,8 @@
 
 class DownloadOptimizer {
     constructor() {
-        this.chunkSize = 10 * 1024 * 1024; // 10MB 块大小
-        this.concurrency = 3; // 并发连接数
+        this.chunkSize = 20 * 1024 * 1024; // 20MB 块大小 (增加分块大小以减少请求次数)
+        this.concurrency = 6; // 并发连接数 (增加并发数以充分利用带宽)
         this.activeDownloads = 0;
         this.completedChunks = 0;
         this.totalChunks = 0;
@@ -11,6 +11,9 @@ class DownloadOptimizer {
         this.fileSize = 0;
         this.fileName = '';
         this.fileUrl = '';
+        this.retryStrategy = { maxRetries: 5, baseDelay: 500 }; // 增强的重试策略
+        this.chunkPrefetchList = []; // 预取队列
+        this.isPrefetching = false; // 预取状态标记
     }
 
     // 初始化下载过程
@@ -173,10 +176,12 @@ class DownloadOptimizer {
             
         } catch (error) {
             console.error(`下载块 ${chunkIndex} 失败:`, error);
-            // 重试机制 - 最多重试3次
-            for (let retry = 0; retry < 3; retry++) {
+            // 增强的重试机制 - 指数退避算法
+            for (let retry = 0; retry < this.retryStrategy.maxRetries; retry++) {
                 try {
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (retry + 1)));
+                    // 指数退避延迟：基础延迟 * (2^重试次数)
+                    const delay = this.retryStrategy.baseDelay * Math.pow(2, retry);
+                    await new Promise(resolve => setTimeout(resolve, delay));
                     const response = await fetch(this.fileUrl, {
                         method: 'GET',
                         headers: {

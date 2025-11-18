@@ -122,7 +122,7 @@ function updateVersionDisplay(info) {
 }
 
 // 处理下载操作
-function handleDownload(version) {
+async function handleDownload(version) {
     // 显示下载提示
     showNotification(`正在准备下载版本 ${version}...`);
     
@@ -132,15 +132,80 @@ function handleDownload(version) {
         downloadButton.style.animation = 'pulse 0.5s ease infinite';
     }
     
-    // 模拟下载延迟
-    setTimeout(() => {
-        showNotification('下载即将开始', 'success');
+    try {
+        // 动态加载下载优化器
+        let downloadOptimizer;
+        try {
+            // 尝试ES模块方式导入
+            if (typeof import !== 'undefined') {
+                const module = await import('./download-optimizer.js');
+                downloadOptimizer = module.downloadOptimizer;
+            }
+        } catch (e) {
+            console.warn('使用传统方式加载下载优化器...', e);
+            // 检查全局是否已加载
+            if (window.downloadOptimizer) {
+                downloadOptimizer = window.downloadOptimizer;
+            }
+        }
+        
+        // 根据版本确定下载URL
+        let downloadUrl = '';
+        let fileName = '';
+        
+        // 获取当前点击的按钮以确定下载类型
+        const clickedButton = event ? event.target.closest('button, .download-btn') : null;
+        
+        if (clickedButton) {
+            if (clickedButton.textContent.includes('美国站')) {
+                downloadUrl = 'https://www.tomtarens.xyz/downloads/FBA计算器_美国站.zip';
+                fileName = 'FBA计算器_美国站_v1.3.4.zip';
+            } else if (clickedButton.textContent.includes('日本站')) {
+                downloadUrl = 'https://www.tomtarens.xyz/downloads/FBA计算器_日本站.zip';
+                fileName = 'FBA计算器_日本站_v1.3.4.zip';
+            } else if (clickedButton.textContent.includes('完整安装')) {
+                downloadUrl = 'https://www.tomtarens.xyz/downloads/FBA费用计算器完整安装程序.exe';
+                fileName = 'FBA费用计算器完整安装程序_v1.3.4.exe';
+            }
+        }
+        
+        // 如果没有识别出具体类型，使用默认值
+        if (!downloadUrl) {
+            downloadUrl = 'https://www.tomtarens.xyz/downloads/FBA费用计算器完整安装程序.exe';
+            fileName = 'FBA费用计算器_v1.3.4.exe';
+        }
         
         // 移除动画效果
         if (downloadButton) {
             downloadButton.style.animation = '';
         }
-    }, 1000);
+        
+        showNotification('开始高速下载...', 'success');
+        
+        // 使用优化器下载或传统下载
+        if (downloadOptimizer && typeof downloadOptimizer.startDownload === 'function') {
+            // 使用优化的分块下载
+            await downloadOptimizer.startDownload(downloadUrl, fileName);
+        } else {
+            // 传统下载方式作为后备
+            console.warn('使用传统下载方式');
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showNotification('下载已开始', 'success');
+        }
+    } catch (error) {
+        console.error('下载处理失败:', error);
+        showNotification('下载准备失败，请重试', 'error');
+        
+        // 移除动画效果
+        if (downloadButton) {
+            downloadButton.style.animation = '';
+        }
+    }
 }
 
 // 显示通知

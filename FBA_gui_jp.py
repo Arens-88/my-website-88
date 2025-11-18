@@ -1428,24 +1428,25 @@ except Exception as e:
     
     def determine_size_segment_jp(self, max_len_cm):
         """
-        判断日本站的尺寸分段
+        判断日本站的尺寸分段（基于最新FBA配送费计算标准）
         参数:
         - max_len_cm: 最长边(厘米)
         返回:
         - 尺寸分段描述
         """
-        # 小号：不超过23厘米×35厘米×10厘米
+        # 小号：不超过35厘米（对应23厘米×35厘米×10厘米的规格）
         if max_len_cm <= 35:
             return "小号"
-        # 标准尺寸：不超过80厘米
+        # 标准尺寸：超过35厘米但不超过80厘米
         elif max_len_cm <= 80:
             return "标准"
-        # 大件：不超过120厘米
+        # 大件：超过80厘米但不超过120厘米
         elif max_len_cm <= 120:
             return "大件"
         # 超大件：超过120厘米但不超过200厘米
         elif max_len_cm <= 200:
             return "超大件"
+        # 超大件（超出200厘米）：超过200厘米的特殊情况
         else:
             return "超大件（超出200厘米）"
     

@@ -3713,25 +3713,29 @@ echo 更新完成，程序已重新启动。
         return fee, "\n".join(steps)
     
     def determine_size_segment(self, max_len, mid_len, min_len, len_girth, weight_lb, weight_oz):
-        # 超大件判断
-        is_oversized = (
+        # 超大件判断（基于最新FBA配送费计算标准）
+        # 尺寸超限判断
+        size_oversized = (
             max_len > 59 or 
             mid_len > 33 or 
             min_len > 33 or 
-            len_girth > 130 or 
-            weight_lb > 50
+            len_girth > 130
         )
         
-        if is_oversized or weight_lb >= 50:
+        # 重量超限判断
+        weight_oversized = weight_lb > 50
+        
+        # 先判断是否为超大件
+        if size_oversized or weight_oversized:
             # 按重量细分超大件
             if weight_lb < 50:
                 return "超大件：0至50磅"
-            elif 50 <= weight_lb < 70:
-                return "超大件：50至70磅（不含50磅）"
-            elif 70 <= weight_lb < 150:
-                return "超大件：70至150磅（不含70磅）"
+            elif weight_lb >= 50 and weight_lb < 70:
+                return "超大件：50至70磅（含50磅）"
+            elif weight_lb >= 70 and weight_lb < 150:
+                return "超大件：70至150磅（含70磅）"
             else:
-                return "超大件：150磅以上（不含150磅）"
+                return "超大件：150磅以上（含150磅）"
         else:
             # 判断标准尺寸/大件
             if (weight_oz <= 16) and (max_len <= 15) and (mid_len <= 12) and (min_len <= 0.75):
@@ -3741,15 +3745,15 @@ echo 更新完成，程序已重新启动。
             elif (weight_lb <= 50) and (max_len <= 59) and (mid_len <= 33) and (min_len <= 33) and (len_girth <= 130):
                 return "大号大件"
             else:
-                # 其他情况按重量归为超大件
+                # 其他情况归为超大件
                 if weight_lb < 50:
                     return "超大件：0至50磅"
-                elif 50 <= weight_lb < 70:
-                    return "超大件：50至70磅（不含50磅）"
-                elif 70 <= weight_lb < 150:
-                    return "超大件：70至150磅（不含70磅）"
+                elif weight_lb >= 50 and weight_lb < 70:
+                    return "超大件：50至70磅（含50磅）"
+                elif weight_lb >= 70 and weight_lb < 150:
+                    return "超大件：70至150磅（含70磅）"
                 else:
-                    return "超大件：150磅以上（不含150磅）"
+                    return "超大件：150磅以上（含150磅）"
     
     def calculate_fee(self, size_segment, weight_lb, weight_oz, weight_unit):
         # 小号标准尺寸（盎司）
@@ -3784,8 +3788,6 @@ echo 更新完成，程序已重新启动。
                     return 4.15
                 elif weight_oz <= 16:
                     return 4.55
-                elif 24 < weight_oz <= 28:
-                    return 4.55
                 else:
                     # 对于超过上述范围的盎司值，转换为磅计算
                     return self.calculate_large_standard_fee_by_lb(weight_lb)
@@ -3794,26 +3796,38 @@ echo 更新完成，程序已重新启动。
         
         # 大号大件（磅）
         elif size_segment == "大号大件":
-            if weight_lb <= 0:
-                return 9.61
-            else:
-                return round(9.61 + max(0, weight_lb - 0) * 0.38, 2)
+            # 基础费用 + 超出部分的费用（每磅）
+            base_fee = 9.61
+            additional_fee = max(0, weight_lb) * 0.38  # 从0磅开始计算额外费用
+            return round(base_fee + additional_fee, 2)
         
         # 超大件：0至50磅
         elif size_segment == "超大件：0至50磅":
-            return round(26.33 + max(0, weight_lb) * 0.38, 2)
+            # 基础费用 + 按重量计算的额外费用
+            base_fee = 26.33
+            additional_fee = max(0, weight_lb) * 0.38
+            return round(base_fee + additional_fee, 2)
         
         # 超大件：50至70磅
-        elif size_segment == "超大件：50至70磅（不含50磅）":
-            return round(40.12 + max(0, weight_lb - 51) * 0.75, 2)
+        elif size_segment == "超大件：50至70磅（含50磅）":
+            # 基础费用 + 超出50磅部分的额外费用
+            base_fee = 40.12
+            additional_fee = max(0, weight_lb - 50) * 0.75  # 从50磅开始计算额外费用
+            return round(base_fee + additional_fee, 2)
         
         # 超大件：70至150磅
-        elif size_segment == "超大件：70至150磅（不含70磅）":
-            return round(54.81 + max(0, weight_lb - 71) * 0.75, 2)
+        elif size_segment == "超大件：70至150磅（含70磅）":
+            # 基础费用 + 超出70磅部分的额外费用
+            base_fee = 54.81
+            additional_fee = max(0, weight_lb - 70) * 0.75  # 从70磅开始计算额外费用
+            return round(base_fee + additional_fee, 2)
         
         # 超大件：150磅以上
-        elif size_segment == "超大件：150磅以上（不含150磅）":
-            return round(194.95 + max(0, weight_lb - 151) * 0.19, 2)
+        elif size_segment == "超大件：150磅以上（含150磅）":
+            # 基础费用 + 超出150磅部分的额外费用
+            base_fee = 194.95
+            additional_fee = max(0, weight_lb - 150) * 0.19  # 从150磅开始计算额外费用
+            return round(base_fee + additional_fee, 2)
         
         else:
             return "无法计算配送费"
