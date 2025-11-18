@@ -1,0 +1,7 @@
+请提供您的GitHub仓库URL，以便我将代码推送到远程仓库。
+
+格式示例：
+- HTTPS: https://github.com/yourusername/amazon-report-tool.git
+- SSH: git@github.com:yourusername/amazon-report-tool.git
+
+请将仓库URL提供给我，我将继续完成关联远程仓库、添加提交并推送的操作。

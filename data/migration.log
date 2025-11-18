@@ -1,0 +1,66 @@
+2025-11-18 09:40:14,102 - db_migration - INFO - === 数据库迁移开始 ===
+2025-11-18 09:40:14,168 - db_migration - ERROR - 检查用户表时出错: Foreign key associated with column 'amazon_integrated_data.store_id' could not find table 'amazon_store' with which to generate a foreign key to target column 'id'
+2025-11-18 09:42:33,749 - db_migration - INFO - === 数据库迁移开始 ===
+2025-11-18 09:42:33,791 - db_migration - INFO - 管理员账号已存在
+2025-11-18 09:42:33,793 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 09:42:33,793 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 09:42:33,793 - sqlalchemy.engine.Engine - INFO - SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite~_%' ESCAPE '~' ORDER BY name
+2025-11-18 09:42:33,793 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-11-18 09:42:33,794 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-11-18 09:42:33,794 - db_migration - WARNING - 表 amazon_stores 不存在，跳过
+2025-11-18 09:42:33,794 - db_migration - WARNING - 表 amazon_integrated_data 不存在，跳过
+2025-11-18 09:42:33,794 - db_migration - WARNING - 表 cost_records 不存在，跳过
+2025-11-18 09:42:33,794 - db_migration - WARNING - 表 manual_cost 不存在，跳过
+2025-11-18 09:42:33,794 - db_migration - WARNING - 表 sync_log 不存在，跳过
+2025-11-18 09:42:33,794 - db_migration - WARNING - 表 report_share 不存在，跳过
+2025-11-18 09:42:33,794 - db_migration - WARNING - 表 push_config 不存在，跳过
+2025-11-18 09:42:33,794 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-11-18 09:42:33,795 - db_migration - INFO - 所有表的user_id列添加完成
+2025-11-18 09:42:33,795 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 09:42:33,796 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 09:42:33,796 - sqlalchemy.engine.Engine - INFO - SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite~_%' ESCAPE '~' ORDER BY name
+2025-11-18 09:42:33,796 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-11-18 09:42:33,796 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-11-18 09:42:33,798 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-11-18 09:42:33,798 - db_migration - INFO - 所有表的现有数据更新完成
+2025-11-18 09:42:33,799 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 09:42:33,799 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 09:42:33,799 - sqlalchemy.engine.Engine - INFO - SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite~_%' ESCAPE '~' ORDER BY name
+2025-11-18 09:42:33,799 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-11-18 09:42:33,799 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-11-18 09:42:33,800 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-11-18 09:42:33,800 - db_migration - INFO - 所有表的user_id索引创建完成
+2025-11-18 09:42:33,809 - db_migration - INFO - 成功查询到 0 条用户ID为1的集成数据记录
+2025-11-18 09:42:33,809 - db_migration - INFO - === 数据库迁移成功完成 ===
+2025-11-18 10:20:29,730 - db_migration - INFO - === 数据库迁移开始 ===
+2025-11-18 10:20:29,774 - db_migration - INFO - 管理员账号已存在
+2025-11-18 10:20:29,775 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 10:20:29,775 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 10:20:29,775 - sqlalchemy.engine.Engine - INFO - SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite~_%' ESCAPE '~' ORDER BY name
+2025-11-18 10:20:29,775 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-11-18 10:20:29,776 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-11-18 10:20:29,776 - db_migration - WARNING - 表 amazon_stores 不存在，跳过
+2025-11-18 10:20:29,776 - db_migration - WARNING - 表 amazon_integrated_data 不存在，跳过
+2025-11-18 10:20:29,776 - db_migration - WARNING - 表 cost_records 不存在，跳过
+2025-11-18 10:20:29,776 - db_migration - WARNING - 表 manual_cost 不存在，跳过
+2025-11-18 10:20:29,776 - db_migration - WARNING - 表 sync_log 不存在，跳过
+2025-11-18 10:20:29,776 - db_migration - WARNING - 表 report_share 不存在，跳过
+2025-11-18 10:20:29,777 - db_migration - WARNING - 表 push_config 不存在，跳过
+2025-11-18 10:20:29,777 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-11-18 10:20:29,777 - db_migration - INFO - 所有表的user_id列添加完成
+2025-11-18 10:20:29,778 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 10:20:29,778 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 10:20:29,778 - sqlalchemy.engine.Engine - INFO - SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite~_%' ESCAPE '~' ORDER BY name
+2025-11-18 10:20:29,779 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-11-18 10:20:29,779 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-11-18 10:20:29,779 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-11-18 10:20:29,779 - db_migration - INFO - 所有表的现有数据更新完成
+2025-11-18 10:20:29,780 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 10:20:29,781 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-11-18 10:20:29,781 - sqlalchemy.engine.Engine - INFO - SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite~_%' ESCAPE '~' ORDER BY name
+2025-11-18 10:20:29,781 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-11-18 10:20:29,781 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-11-18 10:20:29,782 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-11-18 10:20:29,782 - db_migration - INFO - 所有表的user_id索引创建完成
+2025-11-18 10:20:29,795 - db_migration - INFO - 成功查询到 0 条用户ID为1的集成数据记录
+2025-11-18 10:20:29,795 - db_migration - INFO - === 数据库迁移成功完成 ===
