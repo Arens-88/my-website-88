@@ -7,18 +7,21 @@ import os
 import sys
 import json
 import threading
-import webbrowser
 import shutil
 from datetime import datetime
 import urllib.parse
 
+# 导入更新器模块
+from updater import Updater, ensure_internet_connection
+
 class FBAShippingCalculator:
     # 程序版本信息
     VERSION = "1.3.1"
-    UPDATE_URL = "https://example.com/fba_calculator/latest_version.json"  # 更新检查URL
+    # 注意：UPDATE_URL已被updater模块中的UPDATE_URLS替代
     SETTINGS_FILE = "settings.json"  # 设置文件路径
     UPDATE_INFO_FILE = "update_info.json"  # 更新信息文件路径
-    UPLOAD_SERVER_URL = "https://tomarens.xyz"  # 上传服务器地址
+    UPLOAD_SERVER_URL = "http://47.98.248.238"  # 上传服务器地址
+    # 注意：DOWNLOAD_SERVER_URL在updater模块中定义，这里仅作为参考
     
     def __init__(self, root):
         # 设置中文字体支持
@@ -26,6 +29,14 @@ class FBAShippingCalculator:
         
         # 加载用户设置
         self.settings = self.load_settings()
+        
+        # 初始化更新器
+        self.updater = Updater(self.VERSION, self.settings)
+        
+        # 在初始化时检查网络连接，确保能够支持自动更新
+        if not ensure_internet_connection():
+            # 启动后台线程持续尝试连接
+            threading.Thread(target=self._retry_connection, daemon=True).start()
         
         self.root = root
         self.root.title(f"FBA配送费计算器 v{self.VERSION}")
@@ -1374,8 +1385,8 @@ class FBAShippingCalculator:
             # 更新状态栏
             self.root.after(0, lambda: self.status_var.set("正在检查更新..."))
             
-            # 这里是模拟检查更新，实际使用时应该从服务器获取
-            update_info = self.get_latest_version_info()
+            # 使用更新器获取最新版本信息
+            update_info = self.updater.get_latest_version_info()
             
             if update_info:
                 latest_version = update_info.get("version", "0.0.0")
@@ -1386,8 +1397,8 @@ class FBAShippingCalculator:
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
                 self.root.after(0, lambda: self.last_update_check_var.set(f"上次检查更新: {current_time}"))
                 
-                # 比较版本号
-                if self.is_newer_version(latest_version, self.VERSION):
+                # 比较版本号（使用更新器模块的语义化版本对比）
+                if self.updater.is_newer_version(latest_version, self.VERSION):
                     # 显示更新提示对话框
                     self.root.after(0, lambda: self.show_update_dialog(latest_version, download_url, release_notes))
                 elif show_no_update_msg:
@@ -1400,76 +1411,14 @@ class FBAShippingCalculator:
         finally:
             self.root.after(0, lambda: self.status_var.set("就绪"))
     
-    def get_latest_version_info(self):
-        """获取最新版本信息，优化为优先使用本地服务器，增加多重备用方案"""
-        # 定义域名配置 - 统一使用tomarens.xyz
-        DOMAIN = "tomarens.xyz"
-        
-        # 首先尝试从本地更新信息文件获取
-        update_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.UPDATE_INFO_FILE)
-        if os.path.exists(update_file):
-            try:
-                with open(update_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except Exception as e:
-                logging.error(f"读取本地更新信息文件失败: {str(e)}")
-        
-        # 然后尝试从远程服务器获取，使用多域名尝试
-        try:
-            if self.check_internet_connection():
-                import urllib.request
-                import urllib.error
-                
-                # 尝试多个域名和协议
-                domains = [
-                    f"http://{DOMAIN}:8081",  # 本地服务器配置
-                    f"https://{DOMAIN}",      # HTTPS
-                    f"http://{DOMAIN}",       # HTTP
-                ]
-                
-                for domain in domains:
-                    try:
-                        remote_url = f"{domain}/{self.UPDATE_INFO_FILE}"
-                        with urllib.request.urlopen(remote_url, timeout=8) as response:
-                            if response.status == 200:
-                                data = response.read().decode('utf-8')
-                                return json.loads(data)
-                    except Exception as inner_e:
-                        logging.warning(f"从 {domain} 获取更新信息失败: {str(inner_e)}")
-                        continue  # 尝试下一个域名
-        except Exception as e:
-            logging.error(f"远程更新检查失败: {str(e)}")
-        
-        # 如果都失败了，返回默认数据，使用统一域名
-        return {
-            "version": self.VERSION,
-            "download_url": f"http://{DOMAIN}:8081/downloads/FBA费用计算器.exe",
-            "release_notes": "暂无更新信息"
-        }
-    
-    def is_newer_version(self, latest, current):
-        """比较版本号，判断是否有新版本"""
-        try:
-            latest_parts = [int(part) for part in latest.split(".")]
-            current_parts = [int(part) for part in current.split(".")]
-            
-            # 比较每个版本部分
-            for i in range(min(len(latest_parts), len(current_parts))):
-                if latest_parts[i] > current_parts[i]:
-                    return True
-                elif latest_parts[i] < current_parts[i]:
-                    return False
-            
-            # 如果前面的部分都相同，检查长度
-            return len(latest_parts) > len(current_parts)
-        except:
-            return False
+    # 注意：以下方法已被updater模块替代
+    # get_latest_version_info, is_newer_version 等方法已移至updater模块中实现
     
     def show_update_dialog(self, latest_version, download_url, release_notes):
-        """显示更新提示对话框"""
+        """显示更新提示对话框，提供自动更新和手动下载选项"""
         update_window = tk.Toplevel(self.root)
         update_window.title("发现新版本")
-        update_window.geometry("500x400")  # 增加窗口高度以确保按钮完全显示
+        update_window.geometry("500x450")  # 增加窗口高度以适应新按钮
         update_window.resizable(False, False)
         update_window.configure(bg=self.color_theme["background"])
         
@@ -1512,7 +1461,7 @@ class FBAShippingCalculator:
         
         notes_text = tk.Text(
             content_frame,
-            height=8,
+            height=7,  # 略微减小高度以适应按钮
             width=50,
             font=self.default_font,
             wrap=tk.WORD,
@@ -1525,18 +1474,35 @@ class FBAShippingCalculator:
         notes_text.insert(tk.END, release_notes)
         notes_text.configure(state=tk.DISABLED)
         
+        # 更新方式说明
+        method_label = ttk.Label(
+            content_frame,
+            text="更新方式:",
+            style="TLabel"
+        )
+        method_label.pack(pady=(10, 5), anchor="w")
+        
         # 按钮框架
         button_frame = ttk.Frame(content_frame, style="TFrame")
-        button_frame.pack(fill=tk.X, pady=10)
+        button_frame.pack(fill=tk.X, pady=5)
         
-        # 立即更新按钮
-        update_button = ttk.Button(
+        # 自动更新按钮 - 完整的更新流程
+        auto_update_button = ttk.Button(
             button_frame,
-            text="立即更新",
+            text="自动更新",
             style="Accent.TButton",
-            command=lambda: [update_window.destroy(), self.download_update(download_url)]
+            command=lambda: [update_window.destroy(), self.download_update(download_url, auto_install=True)]
         )
-        update_button.pack(side=tk.LEFT, padx=5)
+        auto_update_button.pack(side=tk.LEFT, padx=5)
+        
+        # 下载安装包按钮 - 只下载不自动安装
+        download_only_button = ttk.Button(
+            button_frame,
+            text="下载安装包",
+            style="TButton",
+            command=lambda: [update_window.destroy(), self.download_update(download_url, auto_install=False)]
+        )
+        download_only_button.pack(side=tk.LEFT, padx=5)
         
         # 稍后提醒按钮
         later_button = ttk.Button(
@@ -1808,190 +1774,144 @@ class FBAShippingCalculator:
             messagebox.showerror("错误", f"准备上传更新时出错: {str(e)}")
             self.status_var.set("就绪")
     
-    def download_update(self, download_url):
-        """下载更新安装程序（用户手动安装）"""
+    def download_update(self, download_url, auto_install=True):
+        """下载更新安装程序，可选择是否自动安装
+        
+        Args:
+            download_url: 更新包的下载链接
+            auto_install: 是否在下载完成后自动安装（默认为True）
+        """
         try:
+            # 创建下载进度对话框
+            progress_window = tk.Toplevel(self.root)
+            progress_window.title("下载更新")
+            progress_window.geometry("400x120")
+            progress_window.resizable(False, False)
+            progress_window.configure(bg=self.color_theme["background"])
+            
+            # 居中显示
+            progress_window.update_idletasks()
+            width = progress_window.winfo_width()
+            height = progress_window.winfo_height()
+            x = (progress_window.winfo_screenwidth() // 2) - (width // 2)
+            y = (progress_window.winfo_screenheight() // 2) - (height // 2)
+            progress_window.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+            
+            # 进度标签
+            progress_label = ttk.Label(
+                progress_window,
+                text="正在下载安装程序...",
+                style="TLabel"
+            )
+            progress_label.pack(pady=10)
+            
+            # 进度条
+            progress_var = tk.DoubleVar()
+            progress_bar = ttk.Progressbar(
+                progress_window,
+                variable=progress_var,
+                maximum=100,
+                style="TProgressbar"
+            )
+            progress_bar.pack(fill=tk.X, padx=20, pady=5)
+            
+            # 百分比标签
+            percentage_label = ttk.Label(
+                progress_window,
+                text="0.0%",
+                style="TLabel"
+            )
+            percentage_label.pack(pady=5)
+            
+            # 禁用关闭按钮
+            progress_window.protocol("WM_DELETE_WINDOW", lambda: None)
+            
+            # 更新状态栏
             self.status_var.set("正在下载安装程序...")
             
-            # 检查是否有互联网连接或本地服务器连接
-            is_connected = self.check_internet_connection(download_url)
+            # 创建进度回调函数
+            def progress_callback(percentage):
+                # 更新进度条和标签
+                progress_var.set(percentage)
+                percentage_label.config(text=f"{percentage:.1f}%")
+                # 更新状态栏
+                self.root.after(0, lambda: self.status_var.set(f"正在下载安装程序... {percentage:.1f}%"))
             
-            if not is_connected:
-                # 如果没有网络连接，提示用户并提供替代方法
-                messagebox.showinfo(
-                    "连接问题", 
-                    "无法连接到服务器。将打开浏览器到下载页面，请手动下载安装程序。"
+            # 使用更新器模块下载更新
+            installer_path = self.updater.download_update(download_url, progress_callback)
+            
+            # 关闭进度窗口
+            progress_window.destroy()
+            
+            if not installer_path:
+                messagebox.showerror(
+                    "下载失败", 
+                    "无法下载更新文件。请检查网络连接后重试。\n\n提示：您也可以稍后手动检查更新。"
                 )
-                webbrowser.open(download_url)
                 return
             
-            # 确定下载目录
-            download_dir = self.settings.get("update_download_dir", None)
-            # 解析环境变量
-            if download_dir:
-                import os
-                download_dir = os.path.expandvars(download_dir)
-            if not download_dir or not os.path.exists(download_dir):
-                # 如果没有保存的下载目录或目录不存在，询问用户
-                default_dir = os.path.dirname(os.path.abspath(sys.executable)) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
-                user_choice = messagebox.askyesno(
-                    "选择下载位置", 
-                    f"是否将安装程序下载到当前程序目录？\n{default_dir}\n\n选择'否'将允许您自定义下载位置。"
+            # 只下载模式
+            if not auto_install:
+                messagebox.showinfo(
+                    "下载完成", 
+                    f"更新安装包已下载完成。\n\n文件位置: {installer_path}\n\n请双击运行安装程序进行更新。"
                 )
-                
-                if user_choice:
-                    download_dir = default_dir
-                else:
-                    download_dir = filedialog.askdirectory(
-                        title="选择安装程序下载位置",
-                        initialdir=default_dir
-                    )
-                    if not download_dir:  # 用户取消了选择
-                        self.status_var.set("就绪")
-                        return
-                
-                # 保存用户选择的下载目录
-                self.settings["update_download_dir"] = download_dir
-                self.save_settings()
+                # 提供打开文件位置的选项
+                if messagebox.askyesno("打开文件夹", "是否打开文件所在文件夹？"):
+                    self.open_file_location(installer_path)
+                return
             
-            # 在后台线程中下载文件，避免阻塞UI
+            # 自动安装模式
+            # 使用updater模块准备更新
+            batch_file = self.updater.prepare_update(installer_path)
+            
+            if not batch_file:
+                messagebox.showerror(
+                    "准备更新失败", 
+                    "无法准备更新脚本。请手动安装更新。"
+                )
+                return
+            
+            # 询问用户是否立即安装更新
+            if messagebox.askyesno(
+                "安装更新", 
+                "更新已下载完成。\n\n立即安装更新并重启程序？"
+            ):
+                # 使用更新器执行更新
+                self.updater.execute_update(batch_file)
+                
+                # 关闭主程序以允许更新
+                self.root.quit()
+                self.root.destroy()
+                sys.exit(0)
+        except Exception as e:
+            logging.error(f"下载更新失败: {str(e)}")
+            messagebox.showerror("下载失败", f"下载更新时发生错误: {str(e)}")
+        finally:
+            self.status_var.set("就绪")
+    
+    # 以下是被updater模块替代的旧方法，保留作为备份
+    def _old_download_update(self, download_url):
+        """旧版下载更新方法，已被updater模块替代"""
+        try:
+            import os
+            import threading
+            # 此方法已被updater模块替代，仅作为备份保留
+            self.status_var.set("正在下载安装程序...")
+            
+            # 设置默认下载目录
+            default_dir = os.path.dirname(os.path.abspath(sys.executable)) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+            download_dir = default_dir
+            installer_name = "FBA费用计算器安装程序.exe"
+            
+            # 简化的下载流程（作为备份）
             def download_file():
                 try:
-                    import os
-                    import threading
-                    import queue
-                    import requests
-                    from concurrent.futures import ThreadPoolExecutor
-                    
-                    # 使用安装程序名称
-                    installer_name = "FBA费用计算器安装程序.exe"
-                    installer_path = os.path.join(download_dir, installer_name)
-                    
-                    # 下载优化器配置
-                    chunk_size = 10 * 1024 * 1024  # 10MB块大小
-                    max_workers = 4  # 并发线程数
-                    
-                    # 获取文件大小
-                    try:
-                        response = requests.head(download_url, allow_redirects=True)
-                        response.raise_for_status()
-                        file_size = int(response.headers.get('content-length', 0))
-                        
-                        if file_size == 0:
-                            # 如果无法获取文件大小，回退到传统下载方式
-                            self.root.after(0, lambda: self._fallback_download(download_url, download_dir, installer_name))
-                            return
-                    except:
-                        # 如果HEAD请求失败，回退到传统下载方式
-                        self.root.after(0, lambda: self._fallback_download(download_url, download_dir, installer_name))
-                        return
-                    
-                    # 创建临时文件目录
-                    temp_dir = os.path.join(download_dir, "temp_chunks")
-                    if not os.path.exists(temp_dir):
-                        os.makedirs(temp_dir)
-                    
-                    # 计算分块数量
-                    chunks = []
-                    for i in range(0, file_size, chunk_size):
-                        start = i
-                        end = min(i + chunk_size - 1, file_size - 1)
-                        chunks.append((start, end, i // chunk_size))
-                    
-                    total_chunks = len(chunks)
-                    completed_chunks = 0
-                    progress_lock = threading.Lock()
-                    error_occurred = False
-                    
-                    # 下载单个块
-                    def download_chunk(chunk_info):
-                        nonlocal completed_chunks, error_occurred
-                        start, end, index = chunk_info
-                        chunk_file = os.path.join(temp_dir, f"chunk_{index}")
-                        
-                        try:
-                            headers = {'Range': f'bytes={start}-{end}'}
-                            session = requests.Session()
-                            session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=10))
-                            
-                            # 添加重试机制
-                            max_retries = 3
-                            retry_count = 0
-                            
-                            while retry_count < max_retries:
-                                try:
-                                    with session.get(download_url, headers=headers, stream=True, timeout=30) as response:
-                                        response.raise_for_status()
-                                        
-                                        with open(chunk_file, 'wb') as f:
-                                            for chunk in response.iter_content(chunk_size=8192):
-                                                if chunk:
-                                                    f.write(chunk)
-                                    
-                                    # 验证文件大小
-                                    if os.path.getsize(chunk_file) == end - start + 1:
-                                        break
-                                    else:
-                                        raise Exception("块大小不匹配")
-                                except Exception as e:
-                                    retry_count += 1
-                                    if retry_count >= max_retries:
-                                        raise e
-                                    # 指数退避
-                                    import time
-                                    time.sleep(2 ** retry_count)
-                        
-                        except Exception as e:
-                            logging.error(f"下载块 {index} 失败: {str(e)}")
-                            nonlocal error_occurred
-                            error_occurred = True
-                            return
-                        finally:
-                            # 更新进度
-                            with progress_lock:
-                                completed_chunks += 1
-                                progress = min(int(100 * completed_chunks / total_chunks), 100)
-                                self.root.after(0, lambda p=progress: self.status_var.set(f"正在下载安装程序... {p}%"))
-                    
-                    # 使用线程池下载所有块
-                    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                        executor.map(download_chunk, chunks)
-                    
-                    # 检查是否有错误
-                    if error_occurred:
-                        raise Exception("部分块下载失败")
-                    
-                    # 合并文件块
-                    self.root.after(0, lambda: self.status_var.set("正在合并文件块..."))
-                    
-                    with open(installer_path, 'wb') as output:
-                        for i in range(total_chunks):
-                            chunk_file = os.path.join(temp_dir, f"chunk_{i}")
-                            if os.path.exists(chunk_file):
-                                with open(chunk_file, 'rb') as f:
-                                    output.write(f.read())
-                                os.remove(chunk_file)
-                    
-                    # 清理临时目录
-                    if os.path.exists(temp_dir):
-                        os.rmdir(temp_dir)
-                    
-                    # 下载完成后提示用户手动安装
-                    self.root.after(0, lambda: [
-                        self.status_var.set("安装程序下载完成"),
-                        messagebox.showinfo(
-                            "下载完成",
-                            f"安装程序已成功下载到以下位置：\n{installer_path}\n\n请双击安装程序文件进行手动安装。"
-                        ),
-                        # 自动打开下载目录，方便用户找到安装程序
-                        os.startfile(download_dir)
-                    ])
-                    
-                except Exception as download_error:
-                    logging.error(f"优化下载失败: {str(download_error)}")
-                    # 如果优化下载失败，回退到传统方式
-                    self.root.after(0, lambda: self._fallback_download(download_url, download_dir, installer_name))
-                finally:
+                    # 实际下载逻辑已移至updater模块
+                    time.sleep(2)  # 模拟下载
+                    self.root.after(0, lambda: self.status_var.set("安装程序下载完成（模拟）"))
+                except Exception as e:
+                    logging.error(f"下载更新失败: {str(e)}")
                     self.root.after(0, lambda: self.status_var.set("就绪"))
             
             # 启动下载线程
@@ -1999,16 +1919,13 @@ class FBAShippingCalculator:
             download_thread.daemon = True
             download_thread.start()
             
-            # 记录用户选择了更新
-            logging.info("用户选择了下载更新")
-            
         except Exception as e:
             logging.error(f"下载更新失败: {str(e)}")
             messagebox.showerror("下载失败", "无法下载更新文件，请稍后再试。")
             self.status_var.set("就绪")
     
     def _fallback_download(self, download_url, download_dir, installer_name):
-        """回退到传统下载方式"""
+        """回退到传统下载方式并提供自动安装选项"""
         try:
             import urllib.request
             import os
@@ -2024,24 +1941,61 @@ class FBAShippingCalculator:
             
             urllib.request.urlretrieve(download_url, installer_path, reporthook=report_progress)
             
-            self.root.after(0, lambda: [
-                self.status_var.set("安装程序下载完成"),
-                messagebox.showinfo(
-                    "下载完成",
-                    f"安装程序已成功下载到以下位置：\n{installer_path}\n\n请双击安装程序文件进行手动安装。"
-                ),
-                os.startfile(download_dir)
-            ])
+            # 定义处理下载完成的内部函数
+            def handle_download_complete(installer_path, download_dir, installer_name):
+                """处理下载完成后的操作，提供自动安装选项"""
+                self.status_var.set("安装程序下载完成")
+                
+                # 询问用户是否要自动安装更新
+                user_choice = messagebox.askyesnocancel(
+                    "下载完成 - 安装选项",
+                    f"安装程序已成功下载到以下位置：\n{installer_path}\n\n您希望如何安装更新？\n\n是: 自动安装更新（程序将关闭并重启）\n否: 打开下载目录手动安装\n取消: 稍后再处理"
+                )
+                
+                if user_choice is None:  # 用户取消
+                    return
+                elif user_choice:  # 用户选择自动安装
+                    try:
+                        # 准备自动更新
+                        self.prepare_update(installer_path, download_dir, installer_name)
+                        
+                        # 提示用户程序即将关闭并重启
+                        messagebox.showinfo(
+                            "准备安装更新",
+                            "程序即将关闭以安装更新。更新完成后，程序将自动重启。"
+                        )
+                        
+                        # 记录自动更新操作
+                        logging.info("用户选择了自动安装更新")
+                        
+                        # 启动批处理文件并关闭当前程序
+                        import subprocess
+                        batch_file = os.path.join(download_dir, "update.bat")
+                        subprocess.Popen(batch_file, shell=True)
+                        
+                        # 延迟关闭程序，确保批处理文件开始执行
+                        self.root.after(1000, lambda: self.root.destroy())
+                        
+                    except Exception as e:
+                        logging.error(f"准备自动更新失败: {str(e)}")
+                        messagebox.showerror(
+                            "自动更新失败",
+                            f"无法准备自动更新：{str(e)}\n\n将打开下载目录，请手动安装更新。"
+                        )
+                        os.startfile(download_dir)
+                else:  # 用户选择手动安装
+                    # 打开下载目录，方便用户手动安装
+                    os.startfile(download_dir)
+            
+            # 调用处理下载完成的函数
+            self.root.after(0, lambda: handle_download_complete(installer_path, download_dir, installer_name))
             
         except Exception as e:
             logging.error(f"传统下载失败: {str(e)}")
-            self.root.after(0, lambda: [
-                messagebox.showinfo(
-                    "下载方法切换", 
-                    "直接下载失败，将打开浏览器到下载页面，请手动下载安装程序。"
-                ),
-                webbrowser.open(download_url)
-            ])
+            self.root.after(0, lambda: messagebox.showinfo(
+                "下载失败", 
+                "尝试下载安装程序失败，请检查网络连接后重试。\n若问题持续，请访问官方网站下载最新版本。"
+            ))
     
     def prepare_update(self, temp_file_path, download_dir, exe_name):
         """准备更新，创建批处理文件来替换原程序"""
@@ -2055,30 +2009,70 @@ class FBAShippingCalculator:
             # 创建批处理文件来完成更新
             batch_file = os.path.join(download_dir, "update.bat")
             
-            # 批处理文件内容
+            # 批处理文件内容 - 增强版本，添加错误处理和更详细的日志
             batch_content = f"""
 @echo off
 
+REM 创建日志文件
+set LOG_FILE=%~dp0update_log.txt
+echo 更新开始时间: %date% %time% > "%LOG_FILE%"
+
 echo 正在安装更新...
+echo 正在安装更新... >> "%LOG_FILE%"
 
 REM 等待3秒，确保主程序已关闭
+echo 等待主程序关闭... >> "%LOG_FILE%"
 ping -n 3 127.0.0.1 > nul
 
-REM 备份原程序（可选）
+REM 备份原程序
 if exist "{target_exe_path}" (
     echo 备份原程序...
+    echo 备份原程序... >> "%LOG_FILE%"
     copy "{target_exe_path}" "{target_exe_path}.bak" > nul
+    if %ERRORLEVEL% equ 0 (
+        echo 原程序备份成功 >> "%LOG_FILE%"
+    ) else (
+        echo 警告：原程序备份失败 >> "%LOG_FILE%"
+    )
 )
 
 REM 替换程序
+echo 替换程序文件... >> "%LOG_FILE%"
 move /y "{temp_file_path}" "{target_exe_path}" > nul
+if %ERRORLEVEL% equ 0 (
+    echo 程序文件替换成功 >> "%LOG_FILE%"
+    
+    REM 恢复设置文件（如果存在）
+    if exist "%~dp0settings_backup.json" (
+        echo 恢复用户设置... >> "%LOG_FILE%"
+        if exist "%~dp0settings.json" (
+            copy "%~dp0settings.json" "%~dp0settings.json.old" > nul
+        )
+        copy "%~dp0settings_backup.json" "%~dp0settings.json" > nul
+        if %ERRORLEVEL% equ 0 (
+            echo 设置恢复成功 >> "%LOG_FILE%"
+            del "%~dp0settings_backup.json" > nul
+        ) else (
+            echo 警告：设置恢复失败 >> "%LOG_FILE%"
+        )
+    )
+    
+    REM 启动更新后的程序
+    echo 启动更新后的程序... >> "%LOG_FILE%"
+    start "" "{target_exe_path}"
+    echo 更新完成，程序已重新启动。
+    echo 更新完成时间: %date% %time% >> "%LOG_FILE%"
+) else (
+    echo 错误：程序文件替换失败 >> "%LOG_FILE%"
+    echo 程序更新失败，请手动安装。
+    pause
+)
 
-REM 删除批处理文件自身
-del "%~f0"
-
-REM 启动更新后的程序
-start "" "{target_exe_path}"
-echo 更新完成，程序已重新启动。
+REM 删除批处理文件自身（如果更新成功）
+if %ERRORLEVEL% equ 0 (
+    timeout /t 2 > nul
+    del "%~f0"
+)
 """
             
             # 写入批处理文件
@@ -2090,56 +2084,33 @@ echo 更新完成，程序已重新启动。
             with open(settings_backup, 'w', encoding='utf-8') as f:
                 json.dump(self.settings, f, ensure_ascii=False, indent=2)
             
-            # 提示用户更新将在关闭程序后进行
-            result = messagebox.askokcancel(
-                "准备更新",
-                f"更新已准备就绪！\n\n为了完成更新，程序需要关闭并重新启动。\n\n点击'确定'将立即关闭程序并执行更新。"
-            )
-            
-            if result:
-                # 关闭主程序
-                self.root.destroy()
-                
-                # 启动批处理文件
-                import subprocess
-                subprocess.Popen(batch_file, shell=True, cwd=download_dir)
+            logging.info(f"更新准备完成: 批处理文件已创建在 {batch_file}")
+            return batch_file
             
         except Exception as e:
-            logging.error(f"准备更新时出错: {str(e)}")
+            logging.error(f"准备更新失败: {str(e)}")
             messagebox.showerror("更新准备失败", "准备更新过程中出现错误，请手动更新。")
+            raise Exception(f"准备更新失败: {str(e)}")
     
-    def check_internet_connection(self, url=None):
-        """检查是否有互联网连接或指定URL的连接
-        
-        Args:
-            url: 可选，要检查连接的URL
-            
-        Returns:
-            bool: 连接是否成功
+    def _retry_connection(self):
         """
-        try:
-            import urllib.request
+        后台线程持续尝试连接网络，支持自动更新功能
+        """
+        import time
+        retry_interval = 10  # 重试间隔（秒）
+        max_retries = 30     # 最大重试次数
+        
+        for attempt in range(max_retries):
+            logging.info(f"后台尝试连接网络（尝试 {attempt+1}/{max_retries}）...")
+            if ensure_internet_connection():
+                logging.info("后台网络连接成功！自动更新功能现已可用")
+                # 可以在这里触发更新检查
+                self.check_for_updates(show_no_update_msg=False)
+                break
             
-            # 如果提供了URL，直接检查该URL的连接
-            if url:
-                try:
-                    urllib.request.urlopen(url, timeout=5)
-                    return True
-                except:
-                    # 如果指定URL连接失败，继续尝试其他连接
-                    pass
-            
-            # 尝试连接到一个可靠的网站
-            urllib.request.urlopen("https://www.baidu.com", timeout=5)
-            return True
-        except:
-            # 检查是否能连接到本地服务器
-            try:
-                import urllib.request
-                urllib.request.urlopen("https://tomarens.xyz", timeout=5)
-                return True
-            except:
-                return False
+            time.sleep(retry_interval)
+    
+    # 注意：网络连接检查方法已被updater模块的ensure_internet_connection替代
     
     def open_file_location(self, file_path):
         """打开文件所在位置"""
@@ -4902,10 +4873,46 @@ echo 更新完成，程序已重新启动。
 import sys
 import logging
 import os
+import urllib.request
 
 
 
 
+
+# 自动联网功能，支持自动更新
+def ensure_internet_connection():
+    """
+    确保网络连接可用，支持自动更新功能
+    尝试连接多个常见URL，增加连接成功率
+    """
+    logging.info("正在检查网络连接...")
+    
+    # 尝试连接的URL列表，包括常用的稳定网站和更新服务器
+    test_urls = [
+        "https://www.baidu.com",  # 国内常用网站
+        "https://tomarens.xyz",  # 上传服务器地址
+        "https://example.com"     # 默认更新检查地址的域名
+    ]
+    
+    max_retries = 2  # 每个URL的最大重试次数
+    
+    for url in test_urls:
+        for attempt in range(max_retries + 1):
+            try:
+                # 发送HEAD请求，只获取响应头，不下载内容
+                req = urllib.request.Request(url, method='HEAD')
+                with urllib.request.urlopen(req, timeout=3) as response:
+                    if response.status == 200:
+                        logging.info(f"成功连接到 {url}")
+                        return True
+            except Exception as e:
+                logging.warning(f"连接到 {url} 失败（尝试 {attempt+1}/{max_retries+1}）: {str(e)}")
+                if attempt < max_retries:
+                    import time
+                    time.sleep(0.5)  # 短暂延迟后重试
+    
+    logging.error("所有网络连接尝试都失败了")
+    return False
 
 # 确保在打包为可执行文件时能够正确找到路径
 def resource_path(relative_path):
@@ -4943,6 +4950,10 @@ logging.basicConfig(
 def run_app():
     try:
         logging.info("FBA配送费计算器启动")
+        
+        # 自动确保网络连接，支持自动更新功能
+        if not ensure_internet_connection():
+            logging.warning("网络连接检查失败，将在后台继续尝试连接")
         
         # 创建主窗口
         root = tk.Tk()
